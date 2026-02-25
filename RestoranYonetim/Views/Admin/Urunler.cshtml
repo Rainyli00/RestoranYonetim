@@ -1,0 +1,472 @@
+﻿@model List<RestoranYonetim.Models.Urun>
+@{
+    ViewData["Title"] = "Ürün Yönetimi";
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+    var kategoriler = ViewBag.Kategoriler as List<RestoranYonetim.Models.Kategori>;
+    var aktifKat = ViewBag.AktifKategori as int?;
+    var arama = ViewBag.Arama as string;
+}
+
+<!-- Toast Bildirimleri -->
+@if (TempData["Success"] != null)
+{
+    <div class="toast toast-top toast-end z-50 transition-all duration-300" id="successToast">
+        <div class="alert alert-success text-white shadow-lg">
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-circle-check text-xl"></i>
+                <span class="font-medium">@TempData["Success"]</span>
+            </div>
+        </div>
+    </div>
+}
+
+@if (TempData["Error"] != null)
+{
+    <div class="toast toast-top toast-end z-50 transition-all duration-300" id="errorToast">
+        <div class="alert alert-error text-white shadow-lg">
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-circle-xmark text-xl"></i>
+                <span class="font-medium">@TempData["Error"]</span>
+            </div>
+        </div>
+    </div>
+}
+
+<div class="flex justify-between items-center mb-6">
+    <div>
+
+    </div>
+    <button class="btn bg-blue-600 hover:bg-blue-700 text-white border-0 gap-2 shadow-lg" onclick="document.getElementById('modal_urun_ekle').showModal()">
+        <i class="fa-solid fa-plus"></i> Yeni Ürün
+    </button>
+</div>
+
+<!-- İstatistik Kartları -->
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+    <div class="stats shadow-sm bg-white border border-slate-200">
+        <div class="stat py-3">
+            <div class="stat-figure text-blue-500">
+                <i class="fa-solid fa-boxes-stacked text-2xl"></i>
+            </div>
+            <div class="stat-title text-xs">Toplam Ürün Sayısı</div>
+            <div class="stat-value text-2xl text-blue-600">@ViewBag.ToplamKayit</div>
+        </div>
+    </div>
+    
+    <div class="stats shadow-sm bg-white border border-slate-200">
+        <div class="stat py-3">
+            <div class="stat-figure text-green-500">
+                <i class="fa-solid fa-circle-check text-2xl"></i>
+            </div>
+            <div class="stat-title text-xs">Aktif Ürün Sayısı</div>
+            <div class="stat-value text-2xl text-green-600">@Model.Count(u => u.AktifMi == 1)</div>
+        </div>
+    </div>
+    
+    <div class="stats shadow-sm bg-white border border-slate-200">
+        <div class="stat py-3">
+            <div class="stat-figure text-amber-500">
+                <i class="fa-solid fa-triangle-exclamation text-2xl"></i>
+            </div>
+            <div class="stat-title text-xs">Kritik Stok</div>
+            <div class="stat-value text-2xl text-amber-600">@Model.Count(u => u.Stok <= 10 && u.AktifMi == 1)</div>
+        </div>
+    </div>
+</div>
+
+<!-- Arama ve Filtreleme -->
+<div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 mb-6">
+    <form method="get" action="/Admin/Urunler" id="filterForm" class="flex gap-3 items-end flex-wrap">
+        <!-- Arama -->
+        <div class="form-control flex-1 min-w-[200px]">
+            <label class="label pb-1">
+                <span class="label-text text-xs font-bold">
+                    <i class="fa-solid fa-magnifying-glass mr-1"></i> Ara
+                </span>
+            </label>
+            <input type="text"
+                   name="arama"
+                   value="@arama"
+                   placeholder="Ürün adı ara..."
+                   class="input input-bordered input-sm bg-slate-50" />
+        </div>
+
+        <!-- Kategori Filtresi -->
+        <div class="form-control w-40">
+            <label class="label pb-1">
+                <span class="label-text text-xs font-bold">
+                    <i class="fa-solid fa-layer-group mr-1"></i> Kategori
+                </span>
+            </label>
+            <select name="katId" class="select select-bordered select-sm bg-slate-50">
+                <option value="">Tümü</option>
+                @if (kategoriler != null)
+                {
+                    foreach (var k in kategoriler)
+                    {
+                        <option value="@k.KategoriId" selected="@(aktifKat == k.KategoriId)">@k.KategoriAdi</option>
+                    }
+                }
+            </select>
+        </div>
+
+        <!-- Durum Filtresi -->
+        <div class="form-control w-32">
+            <label class="label pb-1">
+                <span class="label-text text-xs font-bold">
+                    <i class="fa-solid fa-circle-dot mr-1"></i> Durum
+                </span>
+            </label>
+            <select name="durum" class="select select-bordered select-sm bg-slate-50">
+                <option value="">Tümü</option>
+                <option value="1" selected="@(ViewBag.AktifDurum == 1)">Aktif</option>
+                <option value="0" selected="@(ViewBag.AktifDurum == 0)">Pasif</option>
+            </select>
+        </div>
+
+        <!-- Sıralama -->
+        <div class="form-control w-44">
+            <label class="label pb-1">
+                <span class="label-text text-xs font-bold">
+                    <i class="fa-solid fa-arrow-down-wide-short mr-1"></i> Sırala
+                </span>
+            </label>
+            <select name="siralama" class="select select-bordered select-sm bg-slate-50">
+                <option value="ad" selected="@(ViewBag.Siralama == "ad")">İsme Göre (A→Z)</option>
+                <option value="kategori" selected="@(ViewBag.Siralama == "kategori")">Kategoriye Göre</option>
+                <option value="fiyat-artan" selected="@(ViewBag.Siralama == "fiyat-artan")">Fiyat (Ucuz→Pahalı)</option>
+                <option value="fiyat-azalan" selected="@(ViewBag.Siralama == "fiyat-azalan")">Fiyat (Pahalı→Ucuz)</option>
+                <option value="stok-azalan" selected="@(ViewBag.Siralama == "stok-azalan")">Stok (Çok→Az)</option>
+                <option value="stok-artan" selected="@(ViewBag.Siralama == "stok-artan")">Stok (Az→Çok)</option>
+            </select>
+        </div>
+
+        <!-- Butonlar -->
+        <div class="flex gap-2">
+            <button type="submit" class="btn bg-blue-600 hover:bg-blue-700 text-white border-0 btn-sm px-6">
+                <i class="fa-solid fa-filter"></i> Filtrele
+            </button>
+            <a href="/Admin/Urunler" class="btn btn-outline btn-sm px-6 gap-2 hover:bg-slate-100 transition-all">
+                <i class="fa-solid fa-rotate-right"></i> Sıfırla
+            </a>
+        </div>
+    </form>
+</div>
+
+<!-- Ürünler Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+    @foreach (var u in Model)
+    {
+                    <div class="card bg-white border border-slate-200 shadow-sm hover:shadow-xl hover:border-blue-300 transition-all duration-300 group">
+            <figure class="relative h-48 bg-gradient-to-br from-slate-100 to-slate-50">
+                @if (!string.IsNullOrEmpty(u.ResimUrl))
+                {
+                    <img src="@u.ResimUrl" alt="@u.UrunAdi" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                }
+                else
+                {
+                    <div class="flex items-center justify-center h-full text-6xl text-slate-300">
+                        <i class="fa-solid fa-utensils"></i>
+                    </div>
+                }
+                
+                <!-- Durum Badge -->
+                <div class="absolute top-2 right-2">
+                    @if (u.AktifMi == 1)
+                    {
+                        <div class="badge badge-success badge-sm text-white gap-1">
+                            <i class="fa-solid fa-circle-check text-xs"></i> Aktif
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="badge badge-error badge-sm text-white gap-1">
+                            <i class="fa-solid fa-circle-xmark text-xs"></i> Pasif
+                        </div>
+                    }
+                </div>
+
+                <!-- Stok Uyarısı -->
+                @if (u.Stok == 0)
+                {
+                    <div class="absolute top-2 left-2">
+                        <div class="badge badge-error badge-sm text-white gap-1">
+                            <i class="fa-solid fa-ban text-xs"></i> Stok Tükendi
+                        </div>
+                    </div>
+                }
+                else if (u.Stok < 10)
+                {
+                    <div class="absolute top-2 left-2">
+                        <div class="badge badge-warning badge-sm text-white gap-1">
+                            <i class="fa-solid fa-triangle-exclamation text-xs"></i> Stok Azaldı
+                        </div>
+                    </div>
+                }
+            </figure>
+
+            <div class="card-body p-4">
+                <!-- Kategori -->
+                <div class="badge badge-ghost badge-sm mb-2">@u.Kategori?.KategoriAdi</div>
+
+                <!-- Ürün Adı -->
+                    <h2 class="card-title text-lg text-slate-800 mb-2 group-hover:text-blue-600 transition-colors">
+                    @u.UrunAdi
+                </h2>
+
+                <!-- Fiyat ve Stok -->
+                <div class="flex justify-between items-center mb-3">
+                    <div class="text-2xl font-bold text-emerald-600">
+                        @u.Fiyat.ToString("C2")
+                    </div>
+                    <div class="text-sm">
+                        <span class="text-slate-500">Stok:</span>
+                        <span class="font-bold @(u.Stok < 10 ? "text-red-500" : "text-slate-700")">@u.Stok</span>
+                    </div>
+                </div>
+
+                <!-- Butonlar -->
+                <div class="card-actions justify-between pt-3 border-t border-slate-200">
+                    <button onclick="urunDuzenle(this)"
+                            data-id="@u.UrunId"
+                            data-ad="@u.UrunAdi"
+                            data-fiyat="@u.Fiyat.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)"
+                            data-stok="@u.Stok"
+                            data-kat="@u.KategoriId"
+                            data-url="@u.ResimUrl"
+                            data-aktif="@u.AktifMi"
+                            class="btn btn-sm btn-ghost flex-1 hover:bg-blue-50 hover:text-blue-600">
+                        <i class="fa-solid fa-pen text-xs"></i> Düzenle
+                    </button>
+                    <button onclick="urunSilModalAc(@u.UrunId, '@u.UrunAdi')" 
+                            class="btn btn-sm btn-ghost hover:bg-red-50 hover:text-red-600">
+                        <i class="fa-solid fa-trash text-xs"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@if (!Model.Any())
+{
+    <div class="flex flex-col items-center justify-center py-20 text-slate-400">
+        <i class="fa-solid fa-box-open text-6xl mb-4"></i>
+        <p class="text-lg mb-2">Henüz ürün eklenmemiş.</p>
+        @if (!string.IsNullOrWhiteSpace(arama))
+        {
+            <p class="text-sm">"@arama" için sonuç bulunamadı.</p>
+        }
+        <button class="btn btn-primary btn-sm mt-4" onclick="document.getElementById('modal_urun_ekle').showModal()">
+            <i class="fa-solid fa-plus mr-1"></i> İlk Ürünü Ekle
+        </button>
+    </div>
+}
+
+<dialog id="modal_urun_ekle" class="modal">
+    <div class="modal-box bg-white">
+        <form method="dialog"><button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button></form>
+        <h3 class="font-bold text-lg mb-4">Yeni Ürün</h3>
+        <form action="/Admin/UrunEkle" method="post" class="space-y-3">
+            <input type="text" name="ad" placeholder="Ürün Adı" class="input input-bordered w-full bg-slate-50" required />
+            <div class="flex gap-2">
+                <input type="number" name="fiyat" placeholder="Fiyat (TL)" step="0.01" class="input input-bordered w-1/2 bg-slate-50" required />
+                <input type="number" name="stok" placeholder="Stok" class="input input-bordered w-1/2 bg-slate-50" required />
+            </div>
+            <select name="katId" class="select select-bordered w-full bg-slate-50">
+                @if (kategoriler != null)
+                {
+                    foreach (var k in kategoriler)
+                    {
+                        <option value="@k.KategoriId">@k.KategoriAdi</option>
+                    }
+                }
+            </select>
+            <input type="text" name="url" placeholder="Resim URL" class="input input-bordered w-full bg-slate-50" />
+            <button class="btn bg-blue-600 hover:bg-blue-700 text-white border-0 w-full mt-2">Kaydet</button>
+        </form>
+    </div>
+</dialog>
+
+<dialog id="modal_urun_duzenle" class="modal">
+    <div class="modal-box bg-white">
+        <form method="dialog"><button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button></form>
+        <h3 class="font-bold text-lg mb-4">Ürün Düzenle</h3>
+        <form action="/Admin/UrunGuncelle" method="post" class="space-y-3">
+            <input type="hidden" name="id" id="edit_id" />
+
+            <input type="text" name="ad" id="edit_ad" class="input input-bordered w-full bg-slate-50" required />
+
+            <div class="flex gap-2">
+                <input type="number" name="fiyat" id="edit_fiyat" step="0.01" min="0" max="999999.99" placeholder="Fiyat (TL)" class="input input-bordered w-1/2 bg-slate-50" required />
+                <input type="number" name="stok" id="edit_stok" min="0" max="999999" placeholder="Stok" class="input input-bordered w-1/2 bg-slate-50" required />
+            </div>
+
+            <div class="flex gap-2">
+                <select name="katId" id="edit_kat" class="select select-bordered w-1/2 bg-slate-50">
+                    @if (kategoriler != null)
+                    {
+                        foreach (var k in kategoriler)
+                        {
+                            <option value="@k.KategoriId">@k.KategoriAdi</option>
+                        }
+                    }
+                </select>
+                <select name="aktifMi" id="edit_aktif" class="select select-bordered w-1/2 bg-slate-50">
+                    <option value="1">Aktif</option>
+                    <option value="0">Pasif</option>
+                </select>
+            </div>
+
+            <input type="text" name="url" id="edit_url" class="input input-bordered w-full bg-slate-50" />
+
+            <button class="btn bg-blue-600 hover:bg-blue-700 text-white border-0 w-full mt-2">Güncelle</button>
+        </form>
+    </div>
+</dialog>
+
+<!-- Sayfalama -->
+@if (ViewBag.Sayfa != null && ViewBag.ToplamSayfa != null)
+{
+    int sayfaNo = (int)ViewBag.Sayfa;
+    int toplamSayfaSayisi = (int)ViewBag.ToplamSayfa;
+    int toplamKayitSayisi = (int)ViewBag.ToplamKayit;
+
+    <div class="flex flex-col sm:flex-row justify-between items-center gap-4 mt-6">
+        <div class="text-sm text-slate-500">
+            Toplam <span class="font-bold text-slate-700">@toplamKayitSayisi</span> ürün
+        </div>
+
+        @if (toplamSayfaSayisi > 1)
+        {
+            var durum = ViewBag.AktifDurum as int?;
+            var siralama = ViewBag.Siralama as string;
+            string parametreler = $"&katId={aktifKat}&arama={arama}&durum={durum}&siralama={siralama}";
+
+            <div class="join">
+                @if (sayfaNo > 1)
+                {
+                    <a href="/Admin/Urunler?sayfa=1@parametreler" class="join-item btn btn-sm hover:bg-blue-50 hover:border-blue-200">
+                        <i class="fa-solid fa-angles-left"></i>
+                    </a>
+                    <a href="/Admin/Urunler?sayfa=@(sayfaNo - 1)@parametreler" class="join-item btn btn-sm hover:bg-blue-50 hover:border-blue-200">
+                        <i class="fa-solid fa-angle-left"></i>
+                    </a>
+                }
+
+                @for (int i = Math.Max(1, sayfaNo - 2); i <= Math.Min(toplamSayfaSayisi, sayfaNo + 2); i++)
+                {
+                    if (i == sayfaNo)
+                    {
+                        <a class="join-item btn btn-sm btn-active bg-blue-600 text-white border-blue-600 hover:bg-blue-700">@i</a>
+                    }
+                    else
+                    {
+                        <a href="/Admin/Urunler?sayfa=@i@parametreler" class="join-item btn btn-sm hover:bg-blue-50 hover:border-blue-200">@i</a>
+                    }
+                }
+
+                @if (sayfaNo < toplamSayfaSayisi)
+                {
+                    <a href="/Admin/Urunler?sayfa=@(sayfaNo + 1)@parametreler" class="join-item btn btn-sm hover:bg-blue-50 hover:border-blue-200">
+                        <i class="fa-solid fa-angle-right"></i>
+                    </a>
+                    <a href="/Admin/Urunler?sayfa=@toplamSayfaSayisi@parametreler" class="join-item btn btn-sm hover:bg-blue-50 hover:border-blue-200">
+                        <i class="fa-solid fa-angles-right"></i>
+                    </a>
+                }
+            </div>
+        }
+    </div>
+}
+
+<!-- Ürün Silme Onay Modal -->
+<dialog id="modal_urun_sil" class="modal">
+    <div class="modal-box bg-white max-w-md">
+        <h3 class="font-bold text-lg text-slate-800 mb-2">
+            <i class="fa-solid fa-triangle-exclamation text-warning mr-2"></i>
+            Emin misiniz?
+        </h3>
+        <p class="text-slate-600 mb-4">
+            <span id="silinecek_urun_ad" class="font-bold text-error"></span> kaldırılacak. Bu işlem geri alınamaz!
+        </p>
+
+        <div class="modal-action">
+            <form method="dialog" class="flex gap-2 w-full">
+                <button class="btn btn-ghost flex-1">
+                    <i class="fa-solid fa-xmark mr-1"></i> İptal
+                </button>
+                <button type="button" onclick="urunSilOnayla()" class="btn btn-error text-white flex-1">
+                    <i class="fa-solid fa-trash mr-1"></i> Kaldır
+                </button>
+            </form>
+        </div>
+    </div>
+    <form method="dialog" class="modal-backdrop">
+        <button>Kapat</button>
+    </form>
+</dialog>
+
+<script>
+    let silinecekUrunId = null;
+
+    // Toast bildirimleri 3 saniye sonra otomatik kapat
+    window.addEventListener('DOMContentLoaded', function() {
+        const successToast = document.getElementById('successToast');
+        const errorToast = document.getElementById('errorToast');
+
+        if (successToast) {
+            setTimeout(() => {
+                successToast.style.opacity = '0';
+                successToast.style.transform = 'translateX(100%)';
+                setTimeout(() => successToast.remove(), 300);
+            }, 3000);
+        }
+
+        if (errorToast) {
+            setTimeout(() => {
+                errorToast.style.opacity = '0';
+                errorToast.style.transform = 'translateX(100%)';
+                setTimeout(() => errorToast.remove(), 300);
+            }, 3000);
+        }
+    });
+
+    function urunDuzenle(btn) {
+        document.getElementById('edit_id').value = btn.getAttribute('data-id');
+        document.getElementById('edit_ad').value = btn.getAttribute('data-ad');
+        
+        // Fiyat doğrudan sayısal formatta geliyor (örn: "450.00")
+        document.getElementById('edit_fiyat').value = btn.getAttribute('data-fiyat');
+        
+        document.getElementById('edit_stok').value = btn.getAttribute('data-stok');
+        document.getElementById('edit_kat').value = btn.getAttribute('data-kat');
+        document.getElementById('edit_url').value = btn.getAttribute('data-url');
+        document.getElementById('edit_aktif').value = btn.getAttribute('data-aktif');
+
+        document.getElementById('modal_urun_duzenle').showModal();
+    }
+
+    function urunSilModalAc(id, ad) {
+        silinecekUrunId = id;
+        document.getElementById('silinecek_urun_ad').textContent = ad;
+        document.getElementById('modal_urun_sil').showModal();
+    }
+
+    function urunSilOnayla() {
+        if (silinecekUrunId) {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '/Admin/UrunSil';
+
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'id';
+            input.value = silinecekUrunId;
+
+            form.appendChild(input);
+            document.body.appendChild(form);
+            form.submit();
+        }
+    }
+</script>

@@ -1,0 +1,277 @@
+﻿@model List<RestoranYonetim.Models.IslemLog>
+
+@{
+    ViewData["Title"] = "İşlem Logları";
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+
+    var baslangic = ViewBag.Baslangic as DateTime?;
+    var bitis = ViewBag.Bitis as DateTime?;
+    var islemTurleri = ViewBag.IslemTurleri as List<RestoranYonetim.Models.IslemTuru>;
+    var personeller = ViewBag.Personeller as List<RestoranYonetim.Models.Personel>;
+    var aktifTur = ViewBag.AktifTur as int?;
+    var aktifPersonel = ViewBag.AktifPersonel as int?;
+}
+
+
+
+<!-- İstatistikler -->
+<div class="grid grid-cols-1 gap-4 mb-6">
+    <div class="stats shadow-sm bg-white border border-slate-200">
+        <div class="stat py-3">
+            <div class="stat-figure text-blue-500">
+                <i class="fa-solid fa-list-check text-2xl"></i>
+            </div>
+            <div class="stat-title text-xs">Toplam Kayıt</div>
+            <div class="stat-value text-2xl text-blue-600">@ViewBag.ToplamKayit</div>
+            <div class="stat-desc text-xs mt-1">
+                @if (ViewBag.ToplamSayfa > 1)
+                {
+                    <span>@ViewBag.ToplamSayfa sayfa · Sayfa @ViewBag.Sayfa</span>
+                }
+                else
+                {
+                    <span>Tüm kayıtlar gösteriliyor</span>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filtreler -->
+<div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 mb-6">
+    <form method="get" action="/Admin/Log" class="flex flex-wrap gap-3 items-end">
+        
+        <!-- Arama -->
+        <div class="form-control flex-1 min-w-[200px]">
+            <label class="label pb-1">
+                <span class="label-text text-xs font-bold text-slate-500">
+                    <i class="fa-solid fa-magnifying-glass mr-1"></i> Ara
+                </span>
+            </label>
+            <input type="text" 
+                   name="arama" 
+                   value="@ViewBag.Arama" 
+                   placeholder="Açıklama, IP, personel, işlem türü..." 
+                   class="input input-bordered input-sm bg-slate-50" />
+        </div>
+        
+        <!-- Başlangıç Tarihi -->
+        <div class="form-control">
+            <label class="label pb-1">
+                <span class="label-text text-xs font-bold text-slate-500">
+                    <i class="fa-solid fa-calendar-days mr-1"></i> Başlangıç
+                </span>
+            </label>
+            <input type="date" 
+                   name="baslangic" 
+                   value="@(baslangic.HasValue ? baslangic.Value.ToString("yyyy-MM-dd") : "")" 
+                   class="input input-bordered input-sm bg-slate-50" />
+        </div>
+        
+        <!-- Bitiş Tarihi -->
+        <div class="form-control">
+            <label class="label pb-1">
+                <span class="label-text text-xs font-bold text-slate-500">
+                    <i class="fa-solid fa-calendar-check mr-1"></i> Bitiş
+                </span>
+            </label>
+            <input type="date" 
+                   name="bitis" 
+                   value="@(bitis.HasValue ? bitis.Value.ToString("yyyy-MM-dd") : "")" 
+                   class="input input-bordered input-sm bg-slate-50" />
+        </div>
+        
+        <!-- İşlem Türü -->
+        <div class="form-control w-40">
+            <label class="label pb-1">
+                <span class="label-text text-xs font-bold text-slate-500">
+                    <i class="fa-solid fa-tag mr-1"></i> İşlem Türü
+                </span>
+            </label>
+            <select name="turId" class="select select-bordered select-sm bg-slate-50">
+                <option value="">Tümü</option>
+                @if (islemTurleri != null)
+                {
+                    foreach (var t in islemTurleri)
+                    {
+                        <option value="@t.IslemTuruId" selected="@(aktifTur == t.IslemTuruId)">@t.TurAdi</option>
+                    }
+                }
+            </select>
+        </div>
+        
+        <!-- Butonlar -->
+        <div class="flex gap-2">
+            <button type="submit" class="btn bg-blue-600 hover:bg-blue-700 text-white border-0 btn-sm px-6">
+                <i class="fa-solid fa-filter"></i> Filtrele
+            </button>
+            <a href="/Admin/Log" class="btn btn-outline btn-sm px-6 gap-2 hover:bg-slate-100 transition-all">
+                <i class="fa-solid fa-rotate-right"></i> Sıfırla
+            </a>
+        </div>
+    </form>
+</div>
+
+<!-- Tablo -->
+<div class="overflow-x-auto bg-white rounded-2xl shadow-sm border border-slate-200">
+    <table class="table w-full">
+        <thead class="bg-slate-50 text-slate-500 uppercase text-xs">
+            <tr>
+                <th class="w-32">Zaman</th>
+                <th class="w-40">İşlem Türü</th>
+                <th class="w-48">Personel</th>
+                <th>Açıklama</th>
+                <th class="w-32">IP Adresi</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (Model.Any())
+            {
+                @foreach (var log in Model)
+                {
+                    <tr class="hover:bg-slate-50 transition-colors">
+                        <td>
+                            <div class="font-medium text-slate-700">@log.Zaman.ToString("dd.MM.yyyy")</div>
+                            <div class="text-xs text-slate-400">@log.Zaman.ToString("HH:mm:ss")</div>
+                        </td>
+                        <td>
+                            @{
+                                var badgeClass = "badge-primary";
+                                var iconClass = "fa-circle-info";
+                                
+                                var turAdi = log.IslemTuru?.TurAdi?.ToLower() ?? "";
+                                
+                                if (turAdi.Contains("sil") || turAdi.Contains("iptal"))
+                                {
+                                    badgeClass = "badge-error";
+                                    iconClass = "fa-trash";
+                                }
+                                else if (turAdi.Contains("ekle") || turAdi.Contains("oluştur"))
+                                {
+                                    badgeClass = "badge-success";
+                                    iconClass = "fa-plus";
+                                }
+                                else if (turAdi.Contains("güncelle") || turAdi.Contains("düzenle"))
+                                {
+                                    badgeClass = "badge-warning";
+                                    iconClass = "fa-pen";
+                                }
+                                else if (turAdi.Contains("giriş") || turAdi.Contains("login"))
+                                {
+                                    badgeClass = "badge-info";
+                                    iconClass = "fa-right-to-bracket";
+                                }
+                                else if (turAdi.Contains("çıkış") || turAdi.Contains("logout"))
+                                {
+                                    badgeClass = "badge-ghost";
+                                    iconClass = "fa-right-from-bracket";
+                                }
+                            }
+                            <span class="badge @badgeClass badge-sm font-medium gap-1 whitespace-nowrap text-xs px-2 py-2">
+                                <i class="fa-solid @iconClass text-[10px]"></i>
+                                <span title="@log.IslemTuru?.TurAdi">@log.IslemTuru?.TurAdi</span>
+                            </span>
+                        </td>
+                        <td>
+                            <div class="flex items-center gap-2">
+                                <div class="avatar placeholder">
+                                    <div class="bg-blue-100 text-blue-600 w-8 h-8 rounded-full text-sm font-semibold">
+                                        <span>@((log.Personel?.AdSoyad ?? "S").Substring(0, 1))</span>
+                                    </div>
+                                </div>
+                                <span class="text-sm font-medium text-slate-700">@(log.Personel?.AdSoyad ?? "Sistem")</span>
+                            </div>
+                        </td>
+                        <td class="text-sm text-slate-600">
+                            @if (string.IsNullOrEmpty(log.IslemAciklama))
+                            {
+                                <span class="text-slate-400 italic text-xs">Açıklama yok</span>
+                            }
+                            else
+                            {
+                                <div class="max-w-md">
+                                    @if (log.IslemAciklama.Length > 100)
+                                    {
+                                        <span class="line-clamp-2" title="@log.IslemAciklama">@log.IslemAciklama</span>
+                                    }
+                                    else
+                                    {
+                                        <span>@log.IslemAciklama</span>
+                                    }
+                                </div>
+                            }
+                        </td>
+                        <td>
+                            @if (string.IsNullOrEmpty(log.IpAdresi))
+                            {
+                                <span class="text-slate-400 text-xs">-</span>
+                            }
+                            else
+                            {
+                                <code class="text-xs bg-slate-100 px-2 py-1 rounded text-slate-600 font-mono">@log.IpAdresi</code>
+                            }
+                        </td>
+                    </tr>
+                }
+            }
+            else
+            {
+                <tr>
+                    <td colspan="5" class="text-center py-12">
+                        <div class="flex flex-col items-center justify-center text-slate-400">
+                            <i class="fa-solid fa-inbox text-5xl mb-3 opacity-50"></i>
+                            <p class="text-lg font-medium mb-1">Kayıt Bulunamadı</p>
+                            <p class="text-sm">
+                                @if (!string.IsNullOrWhiteSpace(ViewBag.Arama as string))
+                                {
+                                    <span>Arama kriterlerinize uygun log kaydı bulunamadı.</span>
+                                }
+                                else if (aktifTur.HasValue)
+                                {
+                                    <span>Seçili filtrelere uygun log kaydı bulunamadı.</span>
+                                }
+                                else
+                                {
+                                    <span>Henüz hiç log kaydı bulunmuyor.</span>
+                                }
+                            </p>
+                        </div>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<!-- Sayfalama -->
+@if (ViewBag.ToplamSayfa > 1)
+{
+    <div class="flex justify-between items-center mt-6">
+        <!-- Sol: Kayıt Bilgisi -->
+        <div class="text-sm text-slate-600">
+            Toplam <span class="font-bold text-slate-800">@ViewBag.ToplamKayit</span> log kaydı
+        </div>
+
+        <!-- Sağ: Sayfalama Butonları -->
+        <div class="join">
+            @if (ViewBag.Sayfa > 1)
+            {
+                <a href="/Admin/Log?sayfa=@(ViewBag.Sayfa - 1)&baslangic=@(baslangic?.ToString("yyyy-MM-dd"))&bitis=@(bitis?.ToString("yyyy-MM-dd"))&turId=@aktifTur&arama=@ViewBag.Arama" 
+                   class="join-item btn btn-sm">«</a>
+            }
+            
+            @for (int i = Math.Max(1, ViewBag.Sayfa - 2); i <= Math.Min(ViewBag.ToplamSayfa, ViewBag.Sayfa + 2); i++)
+            {
+                <a href="/Admin/Log?sayfa=@i&baslangic=@(baslangic?.ToString("yyyy-MM-dd"))&bitis=@(bitis?.ToString("yyyy-MM-dd"))&turId=@aktifTur&arama=@ViewBag.Arama" 
+                   class="join-item btn btn-sm @(i == ViewBag.Sayfa ? "btn-active bg-blue-600 text-white border-blue-600 hover:bg-blue-700" : "hover:bg-blue-50 hover:border-blue-200")">@i</a>
+            }
+            
+            @if (ViewBag.Sayfa < ViewBag.ToplamSayfa)
+            {
+                <a href="/Admin/Log?sayfa=@(ViewBag.Sayfa + 1)&baslangic=@(baslangic?.ToString("yyyy-MM-dd"))&bitis=@(bitis?.ToString("yyyy-MM-dd"))&turId=@aktifTur&arama=@ViewBag.Arama" 
+                   class="join-item btn btn-sm">»</a>
+            }
+        </div>
+    </div>
+}
+

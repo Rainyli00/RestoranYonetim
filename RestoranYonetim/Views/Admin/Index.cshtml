@@ -1,0 +1,200 @@
+﻿@{
+    ViewData["Title"] = "Dashboard";
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+    
+    // Tarih ve zaman formatları
+    var bugun = DateTime.Now;
+    var selamlama = bugun.Hour < 12 ? "Günaydın" : bugun.Hour < 18 ? "İyi Günler" : "İyi Akşamlar";
+    var emojiler = bugun.Hour < 12 ? "☀️" : bugun.Hour < 18 ? "🌤️" : "🌙";
+}
+
+<!-- Hero Header -->
+<div class="relative overflow-hidden bg-gradient-to-br from-blue-500 via-indigo-600 to-purple-700 rounded-3xl shadow-2xl mb-8 p-8">
+    <!-- Decorative Elements -->
+    <div class="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-32 -mt-32"></div>
+    <div class="absolute bottom-0 left-0 w-48 h-48 bg-white/10 rounded-full -ml-24 -mb-24"></div>
+    
+    <div class="relative z-10">
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+            <div class="text-white">
+                <div class="flex items-center gap-3 mb-3">
+                    <span class="text-5xl">@emojiler</span>
+                    <div>
+                        <h1 class="text-4xl font-bold mb-1">@selamlama!</h1>
+                        <p class="text-xl text-blue-100">@ViewBag.AdSoyad</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2 text-blue-100 mt-4">
+                    <i class="fa-regular fa-calendar"></i>
+                    <span class="text-sm">@bugun.ToString("dddd, dd MMMM yyyy", new System.Globalization.CultureInfo("tr-TR"))</span>
+                    <span class="mx-2">•</span>
+                    <i class="fa-regular fa-clock"></i>
+                    <span class="text-sm" id="currentTime">@bugun.ToString("HH:mm:ss")</span>
+                </div>
+            </div>
+            
+            <div class="flex flex-wrap gap-3">
+                <a href="/Admin/Siparisler" class="btn btn-white btn-sm gap-2 shadow-lg hover:shadow-xl transition-all">
+                    <i class="fa-solid fa-history"></i>
+                    Sipariş Geçmişi
+                </a>
+                <a href="/Admin/Rapor" class="btn bg-white/20 backdrop-blur-sm border-white/30 text-white btn-sm gap-2 hover:bg-white/30 transition-all">
+                    <i class="fa-solid fa-chart-line"></i>
+                    Raporlar
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+<!-- İstatistik Kartları -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    
+    <!-- Günlük Ciro -->
+    <div class="group relative overflow-hidden bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 border border-slate-100 cursor-pointer">
+        <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-500/10 to-indigo-500/10 rounded-full -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-500"></div>
+        <div class="relative p-6">
+            <div class="flex justify-between items-start mb-4">
+                <div class="bg-gradient-to-br from-blue-500 to-indigo-600 p-3 rounded-xl shadow-lg group-hover:scale-110 group-hover:rotate-6 transition-all">
+                    <i class="fa-solid fa-wallet text-white text-2xl"></i>
+                </div>
+                <div class="flex items-center gap-1 text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full">
+                    <i class="fa-solid fa-arrow-up text-xs"></i>
+                    <span>Aktif</span>
+                </div>
+            </div>
+            <div>
+                <p class="text-slate-500 text-sm font-semibold mb-2">Günlük Ciro</p>
+                <h2 class="text-4xl font-bold text-slate-800 mb-2 tabular-nums">₺@ViewBag.Ciro</h2>
+                <p class="text-slate-400 text-xs flex items-center gap-1">
+                    <i class="fa-solid fa-clock"></i>
+                    Bugünkü toplam gelir
+                </p>
+                <!-- Bu ay toplam kaldırıldı -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Sipariş Sayısı -->
+    <div class="group relative overflow-hidden bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 border border-slate-100 cursor-pointer">
+        <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-emerald-500/10 to-teal-500/10 rounded-full -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-500"></div>
+        <div class="relative p-6">
+            <div class="flex justify-between items-start mb-4">
+                <div class="bg-gradient-to-br from-emerald-500 to-teal-600 p-3 rounded-xl shadow-lg group-hover:scale-110 group-hover:rotate-6 transition-all">
+                    <i class="fa-solid fa-receipt text-white text-2xl"></i>
+                </div>
+                <div class="flex items-center gap-1 text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-full">
+                    <i class="fa-solid fa-chart-simple text-xs"></i>
+                    <span>Bugün</span>
+                </div>
+            </div>
+            <div>
+                <p class="text-slate-500 text-sm font-semibold mb-2">Sipariş Sayısı</p>
+                <h2 class="text-4xl font-bold text-slate-800 mb-2 tabular-nums">@ViewBag.SiparisSayisi</h2>
+                <p class="text-slate-400 text-xs flex items-center gap-1">
+                    <i class="fa-solid fa-clipboard-list"></i>
+                    Açılan adisyon
+                </p>
+                <!-- Ortalama tutar kaldırıldı -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Masa Doluluk -->
+    <div class="group relative overflow-hidden bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 border border-slate-100 cursor-pointer">
+        <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-amber-500/10 to-orange-500/10 rounded-full -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-500"></div>
+        <div class="relative p-6">
+            <div class="flex justify-between items-start mb-4">
+                <div class="bg-gradient-to-br from-amber-500 to-orange-600 p-3 rounded-xl shadow-lg group-hover:scale-110 group-hover:rotate-6 transition-all">
+                    <i class="fa-solid fa-chair text-white text-2xl"></i>
+                </div>
+                <div class="flex items-center gap-1 text-xs font-bold text-amber-600 bg-amber-50 px-2 py-1 rounded-full">
+                    <i class="fa-solid fa-users text-xs"></i>
+                    <span>Canlı</span>
+                </div>
+            </div>
+            <div>
+                <p class="text-slate-500 text-sm font-semibold mb-2">Masa Durumu</p>
+                <h2 class="text-4xl font-bold text-slate-800 mb-2 tabular-nums">@ViewBag.MasaDurumu</h2>
+                <p class="text-slate-400 text-xs flex items-center gap-1">
+                    <i class="fa-solid fa-percentage"></i>
+                    Dolu / Toplam masa
+                </p>
+                <div class="mt-4 pt-4 border-t border-slate-100">
+                    @{
+                        var masaParts = ViewBag.MasaDurumu.ToString().Split('/');
+                        var dolu = int.Parse(masaParts[0].Trim());
+                        var toplam = int.Parse(masaParts[1].Trim());
+                        var dolulukOrani = toplam > 0 ? (dolu * 100 / toplam) : 0;
+                    }
+                    <div class="w-full bg-slate-100 rounded-full h-2 mb-2">
+                        <div class="bg-gradient-to-r from-amber-400 to-orange-500 h-2 rounded-full transition-all duration-500" 
+                             style="width: @dolulukOrani%"></div>
+                    </div>
+                    <div class="text-xs text-center">
+                        <span class="font-bold text-amber-600">%@dolulukOrani</span>
+                        <span class="text-slate-500"> doluluk oranı</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Kritik Stok -->
+    <div class="group relative overflow-hidden bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 border border-slate-100 cursor-pointer">
+        <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-rose-500/10 to-pink-500/10 rounded-full -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-500"></div>
+        <div class="relative p-6">
+            <div class="flex justify-between items-start mb-4">
+                <div class="bg-gradient-to-br from-rose-500 to-pink-600 p-3 rounded-xl shadow-lg group-hover:scale-110 group-hover:rotate-6 transition-all @(ViewBag.KritikStok > 0 ? "animate-pulse" : "")">
+                    <i class="fa-solid fa-triangle-exclamation text-white text-2xl"></i>
+                </div>
+                <div class="flex items-center gap-1 text-xs font-bold @(ViewBag.KritikStok > 0 ? "text-rose-600 bg-rose-50" : "text-emerald-600 bg-emerald-50") px-2 py-1 rounded-full">
+                    <i class="fa-solid @(ViewBag.KritikStok > 0 ? "fa-bell" : "fa-check") text-xs"></i>
+                    <span>@(ViewBag.KritikStok > 0 ? "Uyarı" : "Güvenli")</span>
+                </div>
+            </div>
+            <div>
+                <p class="text-slate-500 text-sm font-semibold mb-2">Kritik Stok</p>
+                <h2 class="text-4xl font-bold text-slate-800 mb-2 tabular-nums">@ViewBag.KritikStok</h2>
+                <p class="text-slate-400 text-xs flex items-center gap-1">
+                    <i class="fa-solid fa-box-open"></i>
+                    Kritik Stok Sayısı
+                </p>
+               
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+<script>
+    // Saati her saniye güncelle
+    function updateClock() {
+        const now = new Date();
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        const seconds = String(now.getSeconds()).padStart(2, '0');
+        
+        const timeElement = document.getElementById('currentTime');
+        if (timeElement) {
+            timeElement.textContent = `${hours}:${minutes}:${seconds}`;
+        }
+    }
+
+    // Sayfa yüklendiğinde başlat
+    updateClock();
+    
+    // Her saniye güncelle
+    setInterval(updateClock, 1000);
+</script>

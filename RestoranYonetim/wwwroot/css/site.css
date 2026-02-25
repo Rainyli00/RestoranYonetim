@@ -1,0 +1,40 @@
+/* Custom Styles for Restoran Yönetim */
+
+/* Base Styles */
+html {
+  font-size: 1rem;
+}
+
+/* Tailwind CSS Custom Styles */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom Component Classes */
+@layer components {
+  .page-title {
+    @apply text-3xl font-bold text-primary mb-6;
+  }
+  
+  .card-custom {
+    @apply card bg-base-100 shadow-xl hover:shadow-2xl transition-shadow duration-300;
+  }
+  
+  .btn-custom {
+    @apply btn btn-primary;
+  }
+}
+
+/* Custom Utilities */
+@layer utilities {
+  .content-area {
+    min-height: calc(100vh - 200px);
+  }
+}
+
+/* Responsive Font Sizes */
+@media (min-width: 768px) {
+  html {
+    font-size: 1rem;
+  }
+}

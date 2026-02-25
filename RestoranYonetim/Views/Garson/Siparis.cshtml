@@ -1,0 +1,373 @@
+﻿@{
+    ViewData["Title"] = "Sipariş Yönetimi";
+    Layout = "~/Views/Shared/_LayoutGarson.cshtml";
+    
+    var masa = ViewBag.Masa as RestoranYonetim.Models.Masa;
+    var aktifSiparis = ViewBag.AktifSiparis as RestoranYonetim.Models.Siparis;
+    var kategoriler = ViewBag.Kategoriler as List<RestoranYonetim.Models.Kategori>;
+}
+
+<!-- Header -->
+<div class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8 gap-4">
+    <div>
+        <div class="flex items-center gap-3 mb-2">
+            <div class="bg-gradient-to-br from-blue-500 to-indigo-600 p-3 rounded-xl shadow-lg shadow-blue-500/30">
+                <i class="fa-solid fa-utensils text-white text-2xl"></i>
+            </div>
+            <div>
+                <h1 class="text-3xl font-bold text-slate-800">@masa.MasaAdi - Sipariş</h1>
+                <p class="text-sm text-slate-500">
+                    @if (aktifSiparis != null)
+                    {
+                        <span>Sipariş Durumu:
+                            <span class="ml-2 inline-block px-2 py-1 rounded bg-emerald-100 text-emerald-800 font-semibold text-sm">
+                                @aktifSiparis.SiparisDurum.DurumAdi
+                            </span>
+                        </span>
+                    }
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="flex gap-3">
+        <a href="/Garson/Index" class="btn btn-ghost btn-sm gap-2">
+            <i class="fa-solid fa-arrow-left"></i>
+            Masalara Dön
+        </a>
+        <form method="post" action="/Garson/MasaRezervIslem" style="display:inline;">
+            <input type="hidden" name="masaId" value="@masa.MasaId" />
+            @if (masa.DurumId == 3)
+            {
+                <input type="hidden" name="rezerve" value="true" />
+                <button type="submit" class="btn btn-error btn-sm gap-2">
+                    <i class="fa-solid fa-calendar-xmark"></i>
+                    Rezervasyonu Kaldır
+                </button>
+            }
+            else
+            {
+                <input type="hidden" name="rezerve" value="false" />
+                <button type="submit" class="btn btn-warning btn-sm gap-2">
+                    <i class="fa-solid fa-calendar-check"></i>
+                    Masayı Rezerve Et
+                </button>
+            }
+        </form>
+    </div>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success shadow-lg mb-6">
+        <i class="fa-solid fa-circle-check"></i>
+        <span>@TempData["Success"]</span>
+    </div>
+}
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Sol Panel: Menü -->
+    <div class="lg:col-span-2">
+        <div class="bg-white rounded-xl shadow-lg border border-slate-200">
+            <div class="bg-gradient-to-r from-blue-500 to-indigo-600 p-6 text-white rounded-t-xl">
+                <h2 class="text-xl font-bold flex items-center gap-2">
+                    <i class="fa-solid fa-book-open"></i>
+                    Menü
+                </h2>
+            </div>
+            
+            <div class="p-6">
+                <!-- Kategori Tabları -->
+                <div class="tabs tabs-boxed mb-6 bg-slate-100 p-2">
+                    @{
+                        var filteredKategoriler = kategoriler.Where(k => k.KategoriAdi.ToLower() != "diğer").ToList();
+                    }
+                    @for (int i = 0; i < filteredKategoriler.Count; i++)
+                    {
+                        <a class="tab @(i == 0 ? "tab-active" : "")" onclick="showCategory(@i)">
+                            @filteredKategoriler[i].KategoriAdi
+                        </a>
+                    }
+                </div>
+                
+                <!-- Ürün Kategorileri -->
+                @for (int i = 0; i < filteredKategoriler.Count; i++)
+                {
+                    <div id="category-@i" class="category-content @(i != 0 ? "hidden" : "")">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            @foreach (var urun in filteredKategoriler[i].Urun)
+                            {
+                                <div class="border border-slate-200 rounded-lg p-4 hover:shadow-md transition-all group">
+                                    <div class="flex items-center gap-3">
+                                        <div class="relative flex items-center">
+                                            @if (!string.IsNullOrEmpty(urun.ResimUrl))
+                                            {
+                                                <img src="@urun.ResimUrl" alt="@urun.UrunAdi" class="w-16 h-16 object-cover rounded-lg @(urun.Stok == 0 ? "grayscale opacity-50" : "")" />
+                                            }
+                                            else
+                                            {
+                                                <div class="w-16 h-16 bg-gradient-to-br from-purple-400 to-indigo-500 rounded-lg flex items-center justify-center @(urun.Stok == 0 ? "grayscale opacity-50" : "")">
+                                                    <i class="fa-solid fa-utensils text-white text-2xl"></i>
+                                                </div>
+                                            }
+                                        </div>
+                                        <div class="flex-1">
+                                            <h3 class="font-bold text-slate-800">
+                                                @urun.UrunAdi
+                                            </h3>
+                                            <p class="text-lg font-bold text-blue-600">@urun.Fiyat.ToString("C2")</p>
+                                            <p class="text-xs text-slate-500">Stok: @urun.Stok</p>
+                                        </div>
+                                        <div class="flex items-center gap-2">
+                                            @if (urun.Stok == 0)
+                                            {
+                                                <span class="bg-slate-300 text-white text-xs font-bold px-2 py-1 rounded shadow mr-2">Tükendi</span>
+                                                <button class="btn btn-circle btn-sm btn-disabled bg-slate-200 text-slate-400 border-0 cursor-not-allowed" disabled>
+                                                    <i class="fa-solid fa-plus"></i>
+                                                </button>
+                                            }
+                                            else
+                                            {
+                                                <form method="post" action="/Garson/UrunEkle">
+                                                    <input type="hidden" name="masaId" value="@masa.MasaId" />
+                                                    <input type="hidden" name="urunId" value="@urun.UrunId" />
+                                                    <button type="submit" class="btn btn-circle btn-sm btn-primary">
+                                                        <i class="fa-solid fa-plus"></i>
+                                                    </button>
+                                                </form>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+    
+    <!-- Sağ Panel: Sipariş Özeti --> 
+    <div class="lg:col-span-1">
+        <div class="bg-white rounded-xl shadow-lg border border-slate-200 sticky top-6">
+            <div class="bg-gradient-to-r from-emerald-500 to-teal-600 p-6 text-white rounded-t-xl">
+                <h2 class="text-xl font-bold flex items-center gap-2">
+                    <i class="fa-solid fa-shopping-cart"></i>
+                    Sipariş Sepeti
+                </h2>
+            </div>
+            
+            <div class="p-6">
+                <!-- Sipariş Listesi -->
+                <div id="orderList" class="space-y-3 mb-6 max-h-96 overflow-y-auto">
+                    @if (aktifSiparis != null && aktifSiparis.SiparisUrun.Any())
+                    {
+                        @foreach (var su in aktifSiparis.SiparisUrun)
+                        {
+                            <div class="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                                <div class="flex-1">
+                                    <h4 class="font-semibold text-slate-800">@su.Urun.UrunAdi</h4>
+                                    <p class="text-sm text-slate-500">@su.BirimFiyat.ToString("C2") x @su.Adet</p>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <form method="post" action="/Garson/UrunCikar" class="inline">
+                                        <input type="hidden" name="masaId" value="@masa.MasaId" />
+                                        <input type="hidden" name="urunId" value="@su.UrunId" />
+                                        <button type="submit" class="btn btn-circle btn-xs">
+                                            <i class="fa-solid fa-minus"></i>
+                                        </button>
+                                    </form>
+                                    <span class="font-bold w-8 text-center">@su.Adet</span>
+                                    <form method="post" action="/Garson/UrunEkle" class="inline">
+                                        <input type="hidden" name="masaId" value="@masa.MasaId" />
+                                        <input type="hidden" name="urunId" value="@su.UrunId" />
+                                        <button type="submit" class="btn btn-circle btn-xs">
+                                            <i class="fa-solid fa-plus"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="text-center py-8 text-slate-400">
+                            <i class="fa-solid fa-cart-shopping text-4xl mb-3 opacity-50"></i>
+                            <p>Sepet boş</p>
+                        </div>
+                    }
+                </div>
+                
+                <!-- Toplam Tutar -->
+                <div class="border-t border-slate-200 pt-4 mb-6">
+                    <div class="flex justify-between items-center text-2xl font-bold">
+                        <span>TOPLAM:</span>
+                        <span class="text-emerald-600">
+                            @if (aktifSiparis != null)
+                            {
+                                @aktifSiparis.SiparisUrun.Sum(su => su.Adet * su.BirimFiyat).ToString("C2")
+                            }
+                            else
+                            {
+                                <text>₺0,00</text>
+                            }
+                        </span>
+                    </div>
+                </div>
+                
+                <!-- Notlar -->
+                @if (aktifSiparis != null)
+                {
+                    <form method="post" action="/Garson/NotKaydet" class="mb-6">
+                        <input type="hidden" name="siparisId" value="@aktifSiparis.SiparisId" />
+                        <input type="hidden" name="masaId" value="@masa.MasaId" />
+                        <label class="label">
+                            <span class="label-text font-semibold">Sipariş Notu</span>
+                        </label>
+                        <textarea name="notlar" class="textarea textarea-bordered w-full" rows="2" 
+                                  placeholder="Özel istekler...">@aktifSiparis.Notlar</textarea>
+                        <button type="submit" class="btn btn-sm btn-ghost mt-2">
+                            <i class="fa-solid fa-save"></i> Notu Kaydet
+                        </button>
+                    </form>
+                }
+                
+                <!-- Butonlar -->
+                <div class="space-y-3">
+                    @if (aktifSiparis != null)
+                    {
+                        @if (aktifSiparis.SiparisDurumId == 1)
+                        {
+                            <form method="post" action="/Garson/SiparisDurumGuncelle">
+                                <input type="hidden" name="siparisId" value="@aktifSiparis.SiparisId" />
+                                <input type="hidden" name="yeniDurum" value="2" />
+                                <button type="submit" class="btn btn-info w-full gap-2">
+                                    <i class="fa-solid fa-utensils"></i>
+                                    Servis Edildi Olarak İşaretle
+                                </button>
+                            </form>
+                        }
+                        
+                        @if (aktifSiparis.SiparisDurumId == 2)
+                        {
+                            <div class="alert alert-info">
+                                <i class="fa-solid fa-utensils"></i>
+                                <span>Sipariş servis edildi</span>
+                            </div>
+                        }
+                        
+                        <button type="button" onclick="document.getElementById('paymentModal').showModal()" class="btn btn-success w-full gap-2">
+                            <i class="fa-solid fa-credit-card"></i>
+                            Ödeme Al
+                        </button>
+                        
+                        <button type="button" onclick="document.getElementById('cancelModal').showModal()" class="btn btn-error w-full gap-2">
+                            <i class="fa-solid fa-ban"></i>
+                            İptal Et
+                        </button>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Ödeme Modal -->
+@if (aktifSiparis != null)
+{
+    var toplamTutar = aktifSiparis.SiparisUrun.Sum(su => su.Adet * su.BirimFiyat);
+    
+    <dialog id="paymentModal" class="modal">
+        <div class="modal-box">
+            <h3 class="font-bold text-lg mb-4">Ödeme Al</h3>
+            <div class="py-4">
+                <p class="text-2xl font-bold text-center mb-6">
+                    Toplam: <span class="text-emerald-600">@toplamTutar.ToString("C2")</span>
+                </p>
+                <div class="grid grid-cols-2 gap-3">
+                    <form method="post" action="/Garson/OdemeAl">
+                        <input type="hidden" name="siparisId" value="@aktifSiparis.SiparisId" />
+                        <input type="hidden" name="odemeTuruId" value="1" />
+                        <button type="submit" class="btn btn-success btn-lg w-full gap-2">
+                            <i class="fa-solid fa-money-bill-wave"></i>
+                            Nakit
+                        </button>
+                    </form>
+                    <form method="post" action="/Garson/OdemeAl">
+                        <input type="hidden" name="siparisId" value="@aktifSiparis.SiparisId" />
+                        <input type="hidden" name="odemeTuruId" value="2" />
+                        <button type="submit" class="btn btn-info btn-lg w-full gap-2">
+                            <i class="fa-solid fa-credit-card"></i>
+                            Kredi Kartı
+                        </button>
+                    </form>
+                </div>
+            </div>
+            <div class="modal-action">
+                <button type="button" class="btn" onclick="document.getElementById('paymentModal').close()">İptal</button>
+            </div>
+        </div>
+        <form method="dialog" class="modal-backdrop">
+            <button>close</button>
+        </form>
+    </dialog>
+    
+    <!-- İptal Modal -->
+    <dialog id="cancelModal" class="modal">
+        <div class="modal-box">
+            <div class="flex items-center justify-center mb-4">
+                <div class="bg-error/10 p-4 rounded-full">
+                    <i class="fa-solid fa-triangle-exclamation text-error text-4xl"></i>
+                </div>
+            </div>
+            <h3 class="font-bold text-xl text-center mb-2">Siparişi İptal Et</h3>
+            <p class="text-center text-slate-600 mb-6">
+                Bu siparişi iptal etmek istediğinize emin misiniz?<br/>
+                <span class="text-sm text-slate-500 mt-2 inline-block">Bu işlem geri alınamaz!</span>
+            </p>
+            
+            <div class="bg-slate-50 rounded-lg p-4 mb-6">
+                <div class="flex justify-between items-center mb-2">
+                    <span class="text-sm font-semibold text-slate-600">Masa:</span>
+                    <span class="font-bold">@masa.MasaAdi</span>
+                </div>
+                <div class="flex justify-between items-center mb-2">
+                    <span class="text-sm font-semibold text-slate-600">Ürün Sayısı:</span>
+                    <span class="font-bold">@aktifSiparis.SiparisUrun.Sum(su => su.Adet) adet</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-sm font-semibold text-slate-600">Toplam Tutar:</span>
+                    <span class="font-bold text-error">@toplamTutar.ToString("C2")</span>
+                </div>
+            </div>
+            
+            <div class="modal-action">
+                <button type="button" class="btn btn-ghost" onclick="document.getElementById('cancelModal').close()">
+                    <i class="fa-solid fa-xmark"></i>
+                    Vazgeç
+                </button>
+                <form method="post" action="/Garson/SiparisIptal" class="inline">
+                    <input type="hidden" name="siparisId" value="@aktifSiparis.SiparisId" />
+                    <button type="submit" class="btn btn-error gap-2">
+                        <i class="fa-solid fa-ban"></i>
+                        Evet, İptal Et
+                    </button>
+                </form>
+            </div>
+        </div>
+        <form method="dialog" class="modal-backdrop">
+            <button>close</button>
+        </form>
+    </dialog>
+}
+
+<script>
+    // Kategori göster/gizle
+    function showCategory(index) {
+        document.querySelectorAll('.category-content').forEach(c => c.classList.add('hidden'));
+        document.getElementById('category-' + index).classList.remove('hidden');
+        
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('tab-active'));
+        document.querySelectorAll('.tab')[index].classList.add('tab-active');
+    }
+</script>

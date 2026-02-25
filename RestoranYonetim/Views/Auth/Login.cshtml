@@ -1,0 +1,115 @@
+﻿@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="tr" data-theme="light">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Giriş Yap | Restoran Yönetim</title>
+
+    <link rel="stylesheet" href="~/css/daisyui.css" />
+    <script src="~/js/tailwindcss.js"></script>
+
+    <!-- Font Awesome (ikonlar için) -->
+    <link rel="stylesheet" href="~/libs/fontawesome/all.min.css" />
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        .bg-glass {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+        }
+    </style>
+</head>
+<body class="h-screen overflow-hidden flex items-center justify-center bg-base-100">
+
+    <div class="w-full h-full flex">
+
+        <div class="hidden lg:flex w-1/2 bg-cover bg-center relative"
+             style="background-image: url('/img/restoranfoto.jpg');">
+            <div class="absolute inset-0 bg-black bg-opacity-40"></div>
+
+            <div class="relative z-10 m-auto text-center text-white px-10">
+                <h1 class="text-5xl font-bold mb-4">Restoran Yönetim Paneli</h1>
+                <p class="text-lg opacity-90">Hızlı servis ve Akıllı yönetim</p>
+            </div>
+        </div>
+
+        <div class="w-full lg:w-1/2 flex flex-col justify-center items-center p-8 bg-base-100">
+
+            <div class="w-full max-w-md">
+                <div class="mb-8 text-center">
+                        <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-tr from-blue-500 to-indigo-600 text-white mb-4">
+                            <i class="fa-solid fa-utensils text-3xl"></i>
+                        </div>
+                    <h2 class="text-3xl font-bold text-gray-900">Hoş Geldiniz</h2>
+                    <p class="text-gray-500 mt-2">Personel hesabınızla giriş yapın</p>
+                </div>
+
+                @if (TempData["Warning"] != null)
+                {
+                    <div role="alert" class="alert alert-warning mb-6 shadow-sm border border-warning/20">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6 text-white" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                        <span class="text-white font-medium">@TempData["Warning"]</span>
+                    </div>
+                }
+
+                @if (ViewBag.Hata != null)
+                {
+                    <div role="alert" class="alert alert-error mb-6 shadow-sm border border-error/20">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6 text-white" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                        <span class="text-white font-medium">@ViewBag.Hata</span>
+                    </div>
+                }
+
+                <form action="/Auth/Login" method="post" class="space-y-5">
+
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text font-medium">Kullanıcı Adı</span>
+                        </label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                </svg>
+                            </div>
+                            <input type="text" name="kullaniciAdi" placeholder="kullanıcı adı" class="input input-bordered w-full pl-10 focus:input-primary transition-all" required />
+                        </div>
+                    </div>
+
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text font-medium">Şifre</span>
+                        </label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                </svg>
+                            </div>
+                            <input type="password" name="sifre" placeholder="••••••" class="input input-bordered w-full pl-10 focus:input-primary transition-all" required />
+                        </div>
+                        
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-full text-lg shadow-lg hover:shadow-xl transition-all">
+                        Giriş Yap
+                    </button>
+                </form>
+
+                <div class="mt-8 text-center text-sm text-gray-400">
+                    <p>© @DateTime.Now.Year Restoran Yönetim Sistemi - Tüm Hakları Saklıdır.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

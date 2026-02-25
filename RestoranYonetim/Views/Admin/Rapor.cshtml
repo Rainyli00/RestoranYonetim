@@ -1,0 +1,1211 @@
+﻿@{
+    ViewData["Title"] = "Raporlar & Analiz";
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+
+    var baslangic = ViewBag.Baslangic;
+    var bitis = ViewBag.Bitis;
+    var ciro = (decimal)ViewBag.ToplamCiro;
+    var gider = (decimal)ViewBag.ToplamGider;
+    var kar = (decimal)ViewBag.NetKar;
+    var siparis = (int)ViewBag.SiparisSayisi;
+    var ortalamaSiparisDegeri = (decimal)ViewBag.OrtalamaSiparisDegeri;
+    var iptalSayisi = (int)ViewBag.IptalEdilenSiparisSayisi;
+    var iptalOrani = (double)ViewBag.IptalOrani;
+    var enYuksekGun = ViewBag.EnYuksekGun;
+    
+    // Hesaplamalar
+    var ortalamaSiparisBasinaCiro = siparis > 0 ? ciro / siparis : 0;
+    var karMarji = ciro > 0 ? (kar / ciro) * 100 : 0;
+    
+    // Bugünün ve Haftanın Satış Sayıları
+    var bugununSatisSayisi = (int)ViewBag.BugununSatisSayisi;
+    var haftaninSatisSayisi = (int)ViewBag.HaftaninSatisSayisi;
+}
+
+
+<!-- Header Section -->
+<div class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8 gap-6">
+   
+    <!-- Tarih Filtresi -->
+    <div class="w-full -mx-6 px-6">
+        <form method="get" action="/Admin/Rapor" class="bg-white p-4 rounded-xl shadow-lg border border-slate-200 w-full">
+            <div class="flex w-full items-end justify-between flex-wrap">
+                <div class="flex items-end gap-3">
+                    <div class="form-control">
+                <label class="label pb-1">
+                    <span class="label-text text-xs font-bold text-slate-600">
+                        <i class="fa-solid fa-calendar-days mr-1"></i> Başlangıç
+                    </span>
+                </label>
+                <input type="date" name="baslangic" value="@baslangic" class="input input-sm input-bordered bg-slate-50 w-44" />
+            </div>
+            <div class="text-slate-400 pb-2">→</div>
+            <div class="form-control">
+                <label class="label pb-1">
+                    <span class="label-text text-xs font-bold text-slate-600">
+                        <i class="fa-solid fa-calendar-check mr-1"></i> Bitiş
+                    </span>
+                </label>
+                <input type="date" name="bitis" value="@bitis" class="input input-sm input-bordered bg-slate-50 w-44" />
+            </div>
+                </div>
+                <div class="flex gap-3 items-center">
+                    <button type="submit" class="btn bg-blue-600 hover:bg-blue-700 text-white border-0 btn-sm px-6 gap-2">
+                        <i class="fa-solid fa-filter"></i> Filtrele
+                    </button>
+                    <a href="/Admin/Rapor" class="btn btn-outline btn-sm px-6 gap-2 hover:bg-slate-100 transition-all">
+                        <i class="fa-solid fa-rotate-right"></i> Sıfırla
+                    </a>
+                    <a href="/Admin/RaporPdfIndir?baslangic=@baslangic&bitis=@bitis" 
+                       class="btn btn-error btn-sm px-6 gap-2 text-white shadow-lg hover:shadow-xl transition-all group"
+                       target="_blank">
+                        <i class="fa-solid fa-file-pdf group-hover:scale-110 transition-transform"></i> 
+                        PDF İndir
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Ana İstatistik Kartları -->
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
+    <!-- Toplam Ciro -->
+    <div class="group relative overflow-hidden bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105">
+        <div class="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16"></div>
+        <div class="absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full -ml-12 -mb-12"></div>
+        <div class="relative p-6 text-white">
+            <div class="flex items-start justify-between mb-4">
+                <div class="bg-white/20 backdrop-blur-sm p-3 rounded-xl">
+                    <i class="fa-solid fa-wallet text-2xl"></i>
+                </div>
+                <div class="bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-bold">
+                    +100%
+                </div>
+            </div>
+            <h3 class="text-sm font-semibold opacity-90 mb-1">Toplam Ciro</h3>
+            <p class="text-3xl font-bold mb-2">@ciro.ToString("C0")</p>
+            <p class="text-xs opacity-75 flex items-center gap-1">
+                <i class="fa-solid fa-arrow-trend-up"></i>
+                Kasaya giren toplam tutar
+            </p>
+        </div>
+    </div>
+
+    <!-- Toplam Gider -->
+    <div class="group relative overflow-hidden bg-gradient-to-br from-rose-500 to-pink-600 rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105">
+        <div class="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16"></div>
+        <div class="absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full -ml-12 -mb-12"></div>
+        <div class="relative p-6 text-white">
+            <div class="flex items-start justify-between mb-4">
+                <div class="bg-white/20 backdrop-blur-sm p-3 rounded-xl">
+                    <i class="fa-solid fa-file-invoice-dollar text-2xl"></i>
+                </div>
+                <div class="bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-bold">
+                    @(ciro > 0 ? ((gider/ciro)*100).ToString("F1") : "0")%
+                </div>
+            </div>
+            <h3 class="text-sm font-semibold opacity-90 mb-1">Toplam Gider</h3>
+            <p class="text-3xl font-bold mb-2">@gider.ToString("C0")</p>
+            <p class="text-xs opacity-75 flex items-center gap-1">
+                <i class="fa-solid fa-arrow-trend-down"></i>
+                İşletme masrafları
+            </p>
+        </div>
+    </div>
+
+    <!-- Net Kâr -->
+    <div class="group relative overflow-hidden bg-gradient-to-br @(kar >= 0 ? "from-emerald-500 to-teal-600" : "from-red-500 to-rose-600") rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105">
+        <div class="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16"></div>
+        <div class="absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full -ml-12 -mb-12"></div>
+        <div class="relative p-6 text-white">
+            <div class="flex items-start justify-between mb-4">
+                <div class="bg-white/20 backdrop-blur-sm p-3 rounded-xl">
+                    <i class="fa-solid fa-scale-balanced text-2xl"></i>
+                </div>
+                <div class="bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-bold">
+                    @karMarji.ToString("F1")%
+                </div>
+            </div>
+            <h3 class="text-sm font-semibold opacity-90 mb-1">Net Kâr</h3>
+            <p class="text-3xl font-bold mb-2">@kar.ToString("C0")</p>
+            <p class="text-xs opacity-75 flex items-center gap-1">
+                <i class="fa-solid @(kar >= 0 ? "fa-arrow-up" : "fa-arrow-down")"></i>
+                Ciro - Gider
+            </p>
+        </div>
+    </div>
+
+    <!-- Siparişler -->
+    <div class="group relative overflow-hidden bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105">
+        <div class="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16"></div>
+        <div class="absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full -ml-12 -mb-12"></div>
+        <div class="relative p-6 text-white">
+            <div class="flex items-start justify-between mb-4">
+                <div class="bg-white/20 backdrop-blur-sm p-3 rounded-xl">
+                    <i class="fa-solid fa-receipt text-2xl"></i>
+                </div>
+                <div class="bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-bold">
+                    @ortalamaSiparisBasinaCiro.ToString("C0")
+                </div>
+            </div>
+            <h3 class="text-sm font-semibold opacity-90 mb-1">Toplam Sipariş</h3>
+            <p class="text-3xl font-bold mb-2">@siparis</p>
+            <p class="text-xs opacity-75 flex items-center gap-1">
+                <i class="fa-solid fa-chart-simple"></i>
+                Ortalama sipariş tutarı
+            </p>
+        </div>
+    </div>
+</div>
+
+<!-- İkincil Metrikler -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+    <!-- Ortalama Sipariş Değeri -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 hover:shadow-lg transition-all">
+        <div class="flex items-center justify-between mb-4">
+            <div class="bg-blue-50 p-3 rounded-lg">
+                <i class="fa-solid fa-shopping-cart text-blue-500 text-xl"></i>
+            </div>
+            <span class="text-xs font-bold text-blue-500 bg-blue-50 px-3 py-1 rounded-full">
+                Ortalama
+            </span>
+        </div>
+        <h4 class="text-sm font-semibold text-slate-500 mb-1">Sipariş Başına Ciro</h4>
+        <p class="text-2xl font-bold text-slate-800">@ortalamaSiparisBasinaCiro.ToString("C2")</p>
+        <div class="mt-3 pt-3 border-t border-slate-100">
+            <p class="text-xs text-slate-500">
+                Toplam: @ciro.ToString("C0") / @siparis adisyon
+            </p>
+        </div>
+    </div>
+
+    <!-- Kâr Marjı -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 hover:shadow-lg transition-all">
+        <div class="flex items-center justify-between mb-4">
+            <div class="bg-@(kar >= 0 ? "emerald" : "red")-50 p-3 rounded-lg">
+                <i class="fa-solid fa-percent text-@(kar >= 0 ? "emerald" : "red")-500 text-xl"></i>
+            </div>
+            <span class="text-xs font-bold text-@(kar >= 0 ? "emerald" : "red")-500 bg-@(kar >= 0 ? "emerald" : "red")-50 px-3 py-1 rounded-full">
+                @(kar >= 0 ? "Kârlı" : "Zararlı")
+            </span>
+        </div>
+        <h4 class="text-sm font-semibold text-slate-500 mb-1">Kâr Marjı</h4>
+        <p class="text-2xl font-bold text-slate-800">%@karMarji.ToString("F2")</p>
+        <div class="mt-3 pt-3 border-t border-slate-100">
+            <div class="w-full bg-slate-100 rounded-full h-2">
+                <div class="bg-gradient-to-r @(kar >= 0 ? "from-emerald-400 to-teal-500" : "from-red-400 to-rose-500") h-2 rounded-full transition-all duration-500" 
+                     style="width: @Math.Abs(karMarji)%"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gider Oranı -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 hover:shadow-lg transition-all">
+        <div class="flex items-center justify-between mb-4">
+            <div class="bg-rose-50 p-3 rounded-lg">
+                <i class="fa-solid fa-chart-pie text-rose-500 text-xl"></i>
+            </div>
+            <span class="text-xs font-bold text-rose-500 bg-rose-50 px-3 py-1 rounded-full">
+                Oran
+            </span>
+        </div>
+        <h4 class="text-sm font-semibold text-slate-500 mb-1">Gider/Ciro Oranı</h4>
+        <p class="text-2xl font-bold text-slate-800">%@(ciro > 0 ? ((gider/ciro)*100).ToString("F2") : "0")</p>
+        <div class="mt-3 pt-3 border-t border-slate-100">
+            <div class="w-full bg-slate-100 rounded-full h-2">
+                <div class="bg-gradient-to-r from-rose-400 to-pink-500 h-2 rounded-full transition-all duration-500" 
+                     style="width: @(ciro > 0 ? ((gider/ciro)*100) : 0)%"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bugünün ve Haftanın Satış Sayıları -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+    <!-- Bugünün Satış Sayısı -->
+    <div class="relative overflow-hidden bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 p-6">
+        <div class="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full -mr-12 -mt-12"></div>
+        <div class="absolute bottom-0 left-0 w-20 h-20 bg-white/10 rounded-full -ml-10 -mb-10"></div>
+        <div class="relative">
+            <div class="flex items-center gap-3 mb-4">
+                <div class="bg-white/20 backdrop-blur-sm p-3 rounded-xl">
+                    <i class="fa-solid fa-calendar-day text-white text-2xl"></i>
+                </div>
+                <div>
+                    <h3 class="text-white text-lg font-bold">Bugünün Satış Sayısı</h3>
+                    <p class="text-white/80 text-xs">@DateTime.Today.ToString("dd MMMM yyyy")</p>
+                </div>
+            </div>
+            <div class="flex items-baseline gap-2">
+                <p class="text-5xl font-black text-white">@bugununSatisSayisi</p>
+                <span class="text-white/80 text-lg font-semibold">sipariş</span>
+            </div>
+            <div class="mt-3 pt-3 border-t border-white/20">
+                <p class="text-white/90 text-xs flex items-center gap-2">
+                    <i class="fa-solid fa-info-circle"></i>
+                    Bugün tamamlanan satış sayısı
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Haftanın Satış Sayısı -->
+    <div class="relative overflow-hidden bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 p-6">
+        <div class="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full -mr-12 -mt-12"></div>
+        <div class="absolute bottom-0 left-0 w-20 h-20 bg-white/10 rounded-full -ml-10 -mb-10"></div>
+        <div class="relative">
+            <div class="flex items-center gap-3 mb-4">
+                <div class="bg-white/20 backdrop-blur-sm p-3 rounded-xl">
+                    <i class="fa-solid fa-calendar-week text-white text-2xl"></i>
+                </div>
+                <div>
+                    <h3 class="text-white text-lg font-bold">Haftanın Satış Sayısı</h3>
+                    <p class="text-white/80 text-xs">Son 7 gün</p>
+                </div>
+            </div>
+            <div class="flex items-baseline gap-2">
+                <p class="text-5xl font-black text-white">@haftaninSatisSayisi</p>
+                <span class="text-white/80 text-lg font-semibold">sipariş</span>
+            </div>
+            <div class="mt-3 pt-3 border-t border-white/20">
+                <p class="text-white/90 text-xs flex items-center gap-2">
+                    <i class="fa-solid fa-chart-line"></i>
+                    Son 7 günde tamamlanan satış sayısı
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* ============================================================
+   🤖 AI TAHMİN BÖLÜMÜ - AJAX ile Asenkron Yükleme
+   ============================================================ *@
+
+<!-- AI Tahmin Başlığı -->
+<div class="mb-6">
+    <div class="flex items-center gap-3">
+        <div class="bg-gradient-to-r from-violet-500 to-purple-600 p-3 rounded-xl shadow-lg">
+            <i class="fa-solid fa-microchip text-white text-2xl"></i>
+        </div>
+        <div>
+            <h2 class="text-2xl font-bold text-slate-800">AI Destekli Öngörü</h2>
+        </div>
+    </div>
+</div>
+
+<!-- AI İçerik Alanı - AJAX ile doldurulacak -->
+<div id="aiContentArea">
+    <!-- Loading Skeleton -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <!-- Yarın Tahmini Loading -->
+        <div class="bg-gradient-to-br from-violet-500 via-purple-500 to-indigo-600 rounded-2xl shadow-xl overflow-hidden animate-pulse">
+            <div class="p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center gap-3">
+                        <div class="bg-white/20 backdrop-blur-sm p-3 rounded-xl">
+                            <i class="fa-solid fa-wand-magic-sparkles text-white/50 text-2xl"></i>
+                        </div>
+                        <div>
+                            <div class="h-5 bg-white/30 rounded w-32 mb-2"></div>
+                            <div class="h-3 bg-white/20 rounded w-24"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div class="bg-white/10 rounded-xl p-4">
+                        <div class="h-3 bg-white/30 rounded w-20 mb-2"></div>
+                        <div class="h-8 bg-white/30 rounded w-16 mb-2"></div>
+                        <div class="h-3 bg-white/20 rounded w-12"></div>
+                    </div>
+                    <div class="bg-white/10 rounded-xl p-4">
+                        <div class="h-3 bg-white/30 rounded w-20 mb-2"></div>
+                        <div class="h-8 bg-white/30 rounded w-20 mb-2"></div>
+                        <div class="h-3 bg-white/20 rounded w-12"></div>
+                    </div>
+                </div>
+                <div class="flex items-center justify-center py-4">
+                    <div class="flex items-center gap-2 text-white/80">
+                        <i class="fa-solid fa-spinner fa-spin text-xl"></i>
+                        <span class="text-sm">AI verileri yükleniyor...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Stok Tahmini Loading -->
+        <div class="bg-gradient-to-br from-orange-500 to-red-600 rounded-2xl shadow-xl overflow-hidden animate-pulse">
+            <div class="p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center gap-3">
+                        <div class="bg-white/20 backdrop-blur-sm p-3 rounded-xl">
+                            <i class="fa-solid fa-boxes-stacked text-white/50 text-2xl"></i>
+                        </div>
+                        <div>
+                            <div class="h-5 bg-white/30 rounded w-32 mb-2"></div>
+                            <div class="h-3 bg-white/20 rounded w-24"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div class="bg-white/10 rounded-xl p-4 text-center">
+                        <div class="h-10 bg-white/30 rounded w-12 mx-auto mb-2"></div>
+                        <div class="h-3 bg-white/20 rounded w-16 mx-auto"></div>
+                    </div>
+                    <div class="bg-white/10 rounded-xl p-4 text-center">
+                        <div class="h-10 bg-white/30 rounded w-12 mx-auto mb-2"></div>
+                        <div class="h-3 bg-white/20 rounded w-16 mx-auto"></div>
+                    </div>
+                </div>
+                <div class="flex items-center justify-center py-4">
+                    <div class="flex items-center gap-2 text-white/80">
+                        <i class="fa-solid fa-spinner fa-spin text-xl"></i>
+                        <span class="text-sm">Stok analizi yapılıyor...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-8">
+    <!-- En Çok Satan Ürünler -->
+    <div class="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
+        <div class="bg-gradient-to-r from-amber-500 to-orange-600 p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="bg-white/20 backdrop-blur-sm p-3 rounded-xl">
+                        <i class="fa-solid fa-crown text-2xl"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-bold">En Çok Satan Ürünler</h2>
+                        <p class="text-sm opacity-90">Top 10 performans liderleri</p>
+                    </div>
+                </div>
+                <div class="bg-white/20 backdrop-blur-sm px-4 py-2 rounded-lg">
+                    <i class="fa-solid fa-chart-bar text-xl"></i>
+                </div>
+            </div>
+        </div>
+        <div class="p-6">
+            <div class="h-80">
+                <canvas id="urunChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gider Dağılımı -->
+    <div class="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
+        <div class="bg-gradient-to-r from-rose-500 to-pink-600 p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="bg-white/20 backdrop-blur-sm p-3 rounded-xl">
+                        <i class="fa-solid fa-chart-pie text-2xl"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-bold">Gider Dağılımı</h2>
+                        <p class="text-sm opacity-90">Kategorilere göre harcamalar</p>
+                    </div>
+                </div>
+                <div class="bg-white/20 backdrop-blur-sm px-4 py-2 rounded-lg">
+                    <i class="fa-solid fa-wallet text-xl"></i>
+                </div>
+            </div>
+        </div>
+        <div class="p-6">
+            <div class="h-80 flex justify-center items-center">
+                <canvas id="giderChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Personel Performansı -->
+    <div class="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
+        <div class="bg-gradient-to-r from-purple-500 to-indigo-600 p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="bg-white/20 backdrop-blur-sm p-3 rounded-xl">
+                        <i class="fa-solid fa-users text-2xl"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-bold">En Başarılı Personeller</h2>
+                        <p class="text-sm opacity-90">Ciro bazında Top 5</p>
+                    </div>
+                </div>
+                <div class="bg-white/20 backdrop-blur-sm px-4 py-2 rounded-lg">
+                    <i class="fa-solid fa-trophy text-xl"></i>
+                </div>
+            </div>
+        </div>
+        <div class="p-6">
+            <div class="h-80">
+                <canvas id="personelChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Günlük Ciro Trendi -->
+    <div class="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
+        <div class="bg-gradient-to-r from-cyan-500 to-blue-600 p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="bg-white/20 backdrop-blur-sm p-3 rounded-xl">
+                        <i class="fa-solid fa-chart-line text-2xl"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-bold">Günlük Ciro Trend</h2>
+                        <p class="text-sm opacity-90">Son 7 günlük performans</p>
+                    </div>
+                </div>
+                <div class="bg-white/20 backdrop-blur-sm px-4 py-2 rounded-lg">
+                    <i class="fa-solid fa-calendar text-xl"></i>
+                </div>
+            </div>
+        </div>
+        <div class="p-6">
+            <div class="h-80">
+                <canvas id="trendChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Ödeme Yöntemleri Dağılımı -->
+@{
+    var odemeIstatistikleri = ViewBag.OdemeIstatistikleri as IEnumerable<dynamic>;
+    var toplamOdemeSayisi = ViewBag.ToplamOdemeSayisi as int? ?? 0;
+}
+@if (odemeIstatistikleri != null && odemeIstatistikleri.Any())
+{
+    <div class="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden mb-8">
+        <div class="bg-gradient-to-r from-indigo-500 to-purple-600 p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="bg-white/20 backdrop-blur-sm p-3 rounded-xl">
+                        <i class="fa-solid fa-credit-card text-2xl"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-bold">Ödeme Yöntemleri Dağılımı</h2>
+                        <p class="text-sm opacity-90">Toplam @toplamOdemeSayisi ödeme</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="p-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-@(odemeIstatistikleri.Count() > 4 ? 4 : odemeIstatistikleri.Count()) gap-4">
+                @foreach (var odeme in odemeIstatistikleri)
+                {
+                    var odemeType = odeme.GetType();
+                    var odemeTuruAdi = (string)odemeType.GetProperty("OdemeTuruAdi").GetValue(odeme);
+                    var adet = (int)odemeType.GetProperty("Adet").GetValue(odeme);
+                    var odemetutar = (decimal)odemeType.GetProperty("Tutar").GetValue(odeme);
+                    var odemeTuruId = (int)odemeType.GetProperty("OdemeTuruId").GetValue(odeme);
+                    var yuzde = toplamOdemeSayisi > 0 ? ((double)adet / toplamOdemeSayisi) * 100 : 0;
+                    
+                    var iconClass = odemeTuruId == 1 ? "fa-money-bill-wave" : odemeTuruId == 2 ? "fa-credit-card" : "fa-wallet";
+                    var bgColor = odemeTuruId == 1 ? "bg-emerald-50" : odemeTuruId == 2 ? "bg-blue-50" : "bg-purple-50";
+                    var textColor = odemeTuruId == 1 ? "text-emerald-600" : odemeTuruId == 2 ? "text-blue-600" : "text-purple-600";
+                    var progressColor = odemeTuruId == 1 ? "from-emerald-400 to-green-500" : odemeTuruId == 2 ? "from-blue-400 to-indigo-500" : "from-purple-400 to-pink-500";
+                    
+                    <div class="@bgColor rounded-xl p-5 hover:shadow-md transition-all">
+                        <div class="flex items-center gap-3 mb-3">
+                            <div class="@bgColor p-2 rounded-lg">
+                                <i class="fa-solid @iconClass @textColor text-xl"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-slate-800">@odemeTuruAdi</h4>
+                                <p class="text-xs text-slate-500">@adet işlem</p>
+                            </div>
+                        </div>
+                        <p class="text-2xl font-black @textColor mb-2">@odemetutar.ToString("C0")</p>
+                        <div class="flex items-center gap-2">
+                            <div class="flex-1 bg-slate-200 rounded-full h-2">
+                                <div class="bg-gradient-to-r @progressColor h-2 rounded-full transition-all duration-500" 
+                                     style="width: @yuzde.ToString("F0")%"></div>
+                            </div>
+                            <span class="text-xs font-bold @textColor">%@yuzde.ToString("F1")</span>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Ek Metrikler -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+    <!-- İptal Oranı -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 hover:shadow-lg transition-all">
+        <div class="flex items-center justify-between mb-4">
+            <div class="bg-red-50 p-3 rounded-lg">
+                <i class="fa-solid fa-ban text-red-500 text-xl"></i>
+            </div>
+            <span class="text-xs font-bold text-red-500 bg-red-50 px-3 py-1 rounded-full">
+                %@iptalOrani.ToString("F1")
+            </span>
+        </div>
+        <h4 class="text-sm font-semibold text-slate-500 mb-1">İptal Oranı</h4>
+        <p class="text-2xl font-bold text-slate-800">@iptalSayisi</p>
+        <div class="mt-3 pt-3 border-t border-slate-100">
+            <p class="text-xs text-slate-500">
+                @(siparis + iptalSayisi) sipariş içinden
+            </p>
+        </div>
+    </div>
+
+    <!-- En Yüksek Ciro Günü -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 hover:shadow-lg transition-all">
+        <div class="flex items-center justify-between mb-4">
+            <div class="bg-emerald-50 p-3 rounded-lg">
+                <i class="fa-solid fa-star text-emerald-500 text-xl"></i>
+            </div>
+            <span class="text-xs font-bold text-emerald-500 bg-emerald-50 px-3 py-1 rounded-full">
+                En İyi
+            </span>
+        </div>
+        <h4 class="text-sm font-semibold text-slate-500 mb-1">Rekor Gün</h4>
+        @if (enYuksekGun != null)
+        {
+            var gunType = enYuksekGun.GetType();
+            var tutarProp = gunType.GetProperty("Tutar");
+            var tarihProp = gunType.GetProperty("Tarih");
+            var tutar = (decimal)tutarProp.GetValue(enYuksekGun);
+            var tarih = (DateTime)tarihProp.GetValue(enYuksekGun);
+            
+            <p class="text-2xl font-bold text-slate-800">@tutar.ToString("C0")</p>
+            <div class="mt-3 pt-3 border-t border-slate-100">
+                <p class="text-xs text-slate-500">
+                    <i class="fa-solid fa-calendar-day mr-1"></i>
+                    @tarih.ToString("dd MMMM yyyy")
+                </p>
+            </div>
+        }
+        else
+        {
+            <p class="text-xl text-slate-400">Veri yok</p>
+        }
+    </div>
+
+    <!-- Başarı Skoru -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 hover:shadow-lg transition-all">
+        <div class="flex items-center justify-between mb-4">
+            <div class="bg-amber-50 p-3 rounded-lg">
+                <i class="fa-solid fa-medal text-amber-500 text-xl"></i>
+            </div>
+            <span class="text-xs font-bold text-amber-500 bg-amber-50 px-3 py-1 rounded-full">
+                Skor
+            </span>
+        </div>
+        <h4 class="text-sm font-semibold text-slate-500 mb-1">Performans Skoru</h4>
+        <p class="text-2xl font-bold text-slate-800">
+            @{
+                var skor = 0;
+                if (kar > 0) skor += 30;
+                if (karMarji >= 20) skor += 25;
+                if (iptalOrani < 5) skor += 25;
+                if (siparis > 0) skor += 20;
+            }
+            @skor/100
+        </p>
+        <div class="mt-3 pt-3 border-t border-slate-100">
+            <div class="w-full bg-slate-100 rounded-full h-2">
+                <div class="bg-gradient-to-r from-amber-400 to-orange-500 h-2 rounded-full transition-all duration-500" 
+                     style="width: @skor%"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+
+
+
+<script>
+    // ============================================================
+    // AI VERİLERİNİ AJAX İLE YÜKLE - RETRY MEKANİZMASI İLE
+    // ============================================================
+    
+    const AiDataManager = {
+        isLoading: false,
+        retryCount: 0,
+        maxRetries: 3,
+        retryDelay: 1000, // 1 saniye
+        
+        // AI verilerini yükle
+        async load() {
+            if (this.isLoading) return;
+            this.isLoading = true;
+            
+            console.log(`AI verileri yükleniyor... (Deneme ${this.retryCount + 1})`);
+            
+            try {
+                const response = await fetch('/Admin/GetAiData');
+                console.log('API Response Status:', response.status);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                const data = await response.json();
+                console.log('API Data:', JSON.stringify(data, null, 2));
+                
+                // Veri geldi mi kontrol et - HER İKİ TAHMİN DE GELMELİ
+                const hasYarinTahmini = data.yarinTahmini && data.yarinTahmini.basari === true;
+                const hasStokTahmini = data.stokTahmini && data.stokTahmini.basari === true;
+                const isFullyLoaded = data.aiAktif === true && hasYarinTahmini && hasStokTahmini;
+                
+                // En az biri varsa partial render yap, ikisi de yoksa retry
+                const hasAnyData = data.aiAktif === true || hasYarinTahmini || hasStokTahmini;
+                
+                if (isFullyLoaded) {
+                    // Her iki tahmin de hazır
+                    this.retryCount = 0;
+                    renderAiContent(data);
+                } else if (hasAnyData && this.retryCount < this.maxRetries) {
+                    // Kısmi veri var ama hepsi değil, biraz daha bekle
+                    this.retryCount++;
+                    this.isLoading = false;
+                    console.log(`Kısmi veri geldi (yarın: ${hasYarinTahmini}, stok: ${hasStokTahmini}), ${this.retryDelay}ms sonra tekrar denenecek...`);
+                    setTimeout(() => this.load(), this.retryDelay);
+                    return;
+                } else if (hasAnyData) {
+                    // Max retry'a ulaştık ama en azından bir şey var, göster
+                    this.retryCount = 0;
+                    renderAiContent(data);
+                } else {
+                    // Hiç veri yok
+                    if (this.retryCount < this.maxRetries) {
+                        this.retryCount++;
+                        this.isLoading = false;
+                        console.log(`AI servisi henüz hazır değil, ${this.retryDelay}ms sonra tekrar denenecek...`);
+                        setTimeout(() => this.load(), this.retryDelay);
+                        return;
+                    }
+                    console.log('AI servisi aktif değil veya veri yok.');
+                    renderAiOffline();
+                }
+                
+            } catch (error) {
+                console.error('AI veri yükleme hatası:', error);
+                
+                // Hata durumunda da retry yap
+                if (this.retryCount < this.maxRetries) {
+                    this.retryCount++;
+                    this.isLoading = false;
+                    console.log(`Hata oluştu, ${this.retryDelay}ms sonra tekrar denenecek...`);
+                    setTimeout(() => this.load(), this.retryDelay);
+                    return;
+                }
+                renderAiOffline();
+            } finally {
+                this.isLoading = false;
+            }
+        },
+        
+        // Manuel yenileme
+        refresh() {
+            this.retryCount = 0;
+            this.load();
+        }
+    };
+
+    // Sayfa yüklendiğinde hemen AI verilerini çek
+    document.addEventListener('DOMContentLoaded', function() {
+        // 500ms bekle (sayfa ve AI servisi hazır olsun)
+        setTimeout(() => {
+            AiDataManager.load();
+        }, 500);
+    });
+
+    function renderAiContent(data) {
+        const contentArea = document.getElementById('aiContentArea');
+
+        // Veri kontrolü - en az bir tahmin varsa AI aktif say
+        const hasYarinTahmini = data.yarinTahmini && data.yarinTahmini.basari === true;
+        const hasStokTahmini = data.stokTahmini && data.stokTahmini.basari === true;
+        const isAiActive = data.aiAktif === true || hasYarinTahmini || hasStokTahmini;
+        
+        console.log('AI Active Check:', { aiAktif: data.aiAktif, hasYarinTahmini, hasStokTahmini, isAiActive });
+        console.log('Rendering AI content, isAiActive:', isAiActive);
+
+        if (isAiActive) {
+
+            let html = '<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">';
+
+            // Yarın Tahmini Kartı
+            if (hasYarinTahmini) {
+                const yt = data.yarinTahmini;
+                const satisClass = yt.satisDegisimYuzde >= 0 ? 'text-emerald-300' : 'text-rose-300';
+                const satisIcon = yt.satisDegisimYuzde >= 0 ? 'fa-arrow-up' : 'fa-arrow-down';
+                const ciroClass = yt.ciroDegisimYuzde >= 0 ? 'text-emerald-300' : 'text-rose-300';
+                const ciroIcon = yt.ciroDegisimYuzde >= 0 ? 'fa-arrow-up' : 'fa-arrow-down';
+
+                html += `
+                <div class="bg-gradient-to-br from-violet-500 via-purple-500 to-indigo-600 rounded-2xl shadow-xl overflow-hidden">
+                    <div class="p-6 text-white">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center gap-3">
+                                <div class="bg-white/20 backdrop-blur-sm p-3 rounded-xl">
+                                    <i class="fa-solid fa-wand-magic-sparkles text-2xl"></i>
+                                    </div>
+                                    <div>
+                                        <h3 class="font-bold text-lg">Yarının Tahmini</h3>
+                                        <p class="text-white/80 text-xs">${yt.gunAdi} - ${yt.tarih}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="grid grid-cols-2 gap-4 mb-4">
+                                <div class="bg-white/10 rounded-xl p-4">
+                                    <p class="text-white/70 text-xs mb-1">Tahmini Satış</p>
+                                    <p class="text-3xl font-black">${yt.tahminiSatis}</p>
+                                    <p class="text-xs mt-1 ${satisClass}">
+                                        <i class="fa-solid ${satisIcon}"></i>
+                                        ${yt.satisDegisimYuzde.toFixed(1)}%
+                                    </p>
+                                </div>
+                                <div class="bg-white/10 rounded-xl p-4">
+                                    <p class="text-white/70 text-xs mb-1">Tahmini Ciro</p>
+                                    <p class="text-3xl font-black">₺${yt.tahminiCiro.toLocaleString('tr-TR')}</p>
+                                    <p class="text-xs mt-1 ${ciroClass}">
+                                        <i class="fa-solid ${ciroIcon}"></i>
+                                        ${yt.ciroDegisimYuzde.toFixed(1)}%
+                                    </p>
+                                </div>
+                            </div>
+                            
+                        </div>
+                    </div>`;
+            } else {
+                // Veri yetersiz
+                html += `
+                    <div class="bg-gradient-to-br from-violet-400 via-purple-400 to-indigo-500 rounded-2xl shadow-xl overflow-hidden opacity-80">
+                        <div class="p-6 text-white">
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="flex items-center gap-3">
+                                    <div class="bg-white/20 backdrop-blur-sm p-3 rounded-xl">
+                                        <i class="fa-solid fa-wand-magic-sparkles text-2xl"></i>
+                                    </div>
+                                    <div>
+                                        <h3 class="font-bold text-lg">Yarın Tahmini</h3>
+                                        <p class="text-white/80 text-xs">Veri Bekleniyor</p>
+                                    </div>
+                                </div>
+                                <span class="bg-white/20 px-2 py-1 rounded text-xs">
+                                    <i class="fa-solid fa-clock mr-1"></i> Beklemede
+                                </span>
+                            </div>
+                            <div class="text-center py-6">
+                                <i class="fa-solid fa-hourglass-half text-4xl mb-3 opacity-50"></i>
+                                <p class="text-white/80 text-sm">En az 3 günlük sipariş verisi gerekli</p>
+                            </div>
+                        </div>
+                    </div>`;
+            }
+
+            // Stok Tahmini Kartı
+            if (hasStokTahmini) {
+                const st = data.stokTahmini;
+                const kritikVar = st.kritikUrunSayisi > 0;
+                const stokRenk = kritikVar ? 'from-orange-500 to-red-600' : 'from-emerald-500 to-green-600';
+                
+                let urunListHtml = '';
+                if (st.kritikUrunler && st.kritikUrunler.length > 0) {
+                    urunListHtml = '<div class="space-y-2 max-h-32 overflow-y-auto">';
+                    st.kritikUrunler.slice(0, 3).forEach(urun => {
+                        const kalanGun = urun.tahminiKalanGun !== null ? `${urun.tahminiKalanGun} gün` : 'Tükendi';
+                        urunListHtml += `
+                            <div class="bg-white/10 rounded-lg p-2 flex justify-between items-center text-xs">
+                                <span class="truncate flex-1">${urun.urunAdi}</span>
+                                <span class="bg-white/20 px-2 py-1 rounded ml-2">${kalanGun}</span>
+                            </div>`;
+                    });
+                    urunListHtml += '</div>';
+                } else {
+                    urunListHtml = `
+                        <p class="text-center text-white/80 text-sm">
+                            <i class="fa-solid fa-check-circle mr-1"></i>
+                            Tüm stoklar yeterli seviyede
+                        </p>`;
+                }
+
+                html += `
+                    <div class="bg-gradient-to-br ${stokRenk} rounded-2xl shadow-xl overflow-hidden">
+                        <div class="p-6 text-white">
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="flex items-center gap-3">
+                                    <div class="bg-white/20 backdrop-blur-sm p-3 rounded-xl">
+                                        <i class="fa-solid fa-boxes-stacked text-2xl"></i>
+                                    </div>
+                                    <div>
+                                        <h3 class="font-bold text-lg">Stok Tahminleri</h3>
+                                    </div>
+                                </div>
+                                ${kritikVar ? '<span class="bg-white/20 px-2 py-1 rounded text-xs animate-pulse">⚠️ Uyarı</span>' : ''}
+                            </div>
+                            
+                            <div class="grid grid-cols-2 gap-4 mb-4">
+                                <div class="bg-white/10 rounded-xl p-4 text-center">
+                                    <p class="text-4xl font-black">${st.kritikUrunSayisi}</p>
+                                    <p class="text-white/70 text-xs">Kritik Stok</p>
+                                </div>
+                                <div class="bg-white/10 rounded-xl p-4 text-center">
+                                    <p class="text-4xl font-black">${st.tukenenUrunSayisi}</p>
+                                    <p class="text-white/70 text-xs">Tükenen</p>
+                                </div>
+                            </div>
+                            ${urunListHtml}
+                        </div>
+                    </div>`;
+            } else {
+                // Stok tahmini henüz hazır değil
+                html += `
+                    <div class="bg-gradient-to-br from-orange-400 to-red-500 rounded-2xl shadow-xl overflow-hidden opacity-80">
+                        <div class="p-6 text-white">
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="flex items-center gap-3">
+                                    <div class="bg-white/20 backdrop-blur-sm p-3 rounded-xl">
+                                        <i class="fa-solid fa-boxes-stacked text-2xl"></i>
+                                    </div>
+                                    <div>
+                                        <h3 class="font-bold text-lg">Stok Tahminleri</h3>
+                                        <p class="text-white/80 text-xs">Analiz Yapılıyor</p>
+                                    </div>
+                                </div>
+                                <span class="bg-white/20 px-2 py-1 rounded text-xs">
+                                    <i class="fa-solid fa-spinner fa-spin mr-1"></i> Yükleniyor
+                                </span>
+                            </div>
+                            <div class="text-center py-6">
+                                <i class="fa-solid fa-spinner fa-spin text-4xl mb-3 opacity-50"></i>
+                                <p class="text-white/80 text-sm">Stok analizi hazırlanıyor...</p>
+                            </div>
+                        </div>
+                    </div>`;
+            }
+
+            html += '</div>';
+            contentArea.innerHTML = html;
+        } else {
+            console.log('AI servisi aktif değil, offline modu gösteriliyor');
+            renderAiOffline();
+        }
+    }
+
+    function renderAiOffline() {
+        const contentArea = document.getElementById('aiContentArea');
+
+        contentArea.innerHTML = `
+            <div class="bg-gradient-to-r from-slate-100 to-slate-200 rounded-2xl p-8 mb-8 border-2 border-dashed border-slate-300">
+                <div class="flex flex-col items-center text-center">
+                    <div class="bg-slate-300 p-4 rounded-full mb-4">
+                        <i class="fa-solid fa-robot text-slate-500 text-4xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-600 mb-2">AI Servisi Aktif Değil</h3>
+                    <p class="text-slate-500 mb-4 max-w-md">
+                        Yapay zeka tahmin servisi şu an çalışmıyor. Satış tahminleri ve stok öngörüleri için servisi başlatın.
+                    </p>
+                    <button onclick="AiDataManager.refresh()" class="btn btn-sm btn-primary gap-2 mb-4">
+                        <i class="fa-solid fa-rotate"></i> Tekrar Dene
+                    </button>
+                    <div class="bg-slate-800 text-slate-100 px-4 py-2 rounded-lg font-mono text-sm">
+                        <i class="fa-solid fa-terminal mr-2"></i>
+                        uvicorn ai_service:app --reload --port 8000
+                    </div>
+                    <p class="text-xs text-slate-400 mt-3">
+                        <i class="fa-solid fa-folder mr-1"></i>
+                        RestoranYonetim/Helpers klasöründe çalıştırın
+                    </p>
+                </div>
+            </div>`;
+    }
+
+    // Ürün Satış Grafiği
+    const urunCtx = document.getElementById('urunChart');
+    const urunIsimleri = @Html.Raw(ViewBag.UrunIsimleri);
+    const urunAdetleri = @Html.Raw(ViewBag.UrunAdetleri);
+
+    new Chart(urunCtx, {
+        type: 'bar',
+        data: {
+            labels: urunIsimleri,
+            datasets: [{
+                label: 'Satış Adeti',
+                data: urunAdetleri,
+                backgroundColor: [
+                    'rgba(251, 191, 36, 0.8)',
+                    'rgba(245, 158, 11, 0.8)',
+                    'rgba(217, 119, 6, 0.8)',
+                    'rgba(180, 83, 9, 0.8)',
+                    'rgba(146, 64, 14, 0.8)'
+                ],
+                borderColor: [
+                    'rgb(251, 191, 36)',
+                    'rgb(245, 158, 11)',
+                    'rgb(217, 119, 6)',
+                    'rgb(180, 83, 9)',
+                    'rgb(146, 64, 14)'
+                ],
+                borderWidth: 2,
+                borderRadius: 8,
+                hoverBackgroundColor: [
+                    'rgba(251, 191, 36, 1)',
+                    'rgba(245, 158, 11, 1)',
+                    'rgba(217, 119, 6, 1)',
+                    'rgba(180, 83, 9, 1)',
+                    'rgba(146, 64, 14, 1)'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    titleColor: '#fff',
+                    bodyColor: '#fff',
+                    borderColor: 'rgba(251, 191, 36, 0.5)',
+                    borderWidth: 1,
+                    padding: 12,
+                    displayColors: true,
+                    callbacks: {
+                        label: function(context) {
+                            return ' ' + context.parsed.y + ' adet satıldı';
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        color: '#64748b',
+                        font: { size: 11, weight: '500' }
+                    },
+                    grid: {
+                        color: 'rgba(148, 163, 184, 0.1)',
+                        drawBorder: false
+                    }
+                },
+                x: {
+                    ticks: {
+                        color: '#64748b',
+                        font: { size: 11, weight: '600' }
+                    },
+                    grid: { display: false }
+                }
+            }
+        }
+    });
+
+    // Gider Dağılım Grafiği
+    const giderCtx = document.getElementById('giderChart');
+    const giderKat = @Html.Raw(ViewBag.GiderKategorileri);
+    const giderTutar = @Html.Raw(ViewBag.GiderTutarlari);
+
+    if (giderKat && giderKat.length > 0) {
+        new Chart(giderCtx, {
+            type: 'doughnut',
+            data: {
+                labels: giderKat,
+                datasets: [{
+                    data: giderTutar,
+                    backgroundColor: [
+                        'rgba(239, 68, 68, 0.8)',
+                        'rgba(249, 115, 22, 0.8)',
+                        'rgba(245, 158, 11, 0.8)',
+                        'rgba(132, 204, 22, 0.8)',
+                        'rgba(6, 182, 212, 0.8)',
+                        'rgba(99, 102, 241, 0.8)',
+                        'rgba(168, 85, 247, 0.8)'
+                    ],
+                    borderColor: '#fff',
+                    borderWidth: 3,
+                    hoverOffset: 10,
+                    hoverBorderColor: '#fff',
+                    hoverBorderWidth: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: {
+                            color: '#64748b',
+                            font: { size: 12, weight: '600' },
+                            padding: 15,
+                            usePointStyle: true,
+                            pointStyle: 'circle',
+                            generateLabels: function(chart) {
+                                const data = chart.data;
+                                if (data.labels.length && data.datasets.length) {
+                                    return data.labels.map((label, i) => {
+                                        const value = data.datasets[0].data[i];
+                                        const total = data.datasets[0].data.reduce((a, b) => a + b, 0);
+                                        const percentage = ((value / total) * 100).toFixed(1);
+                                        return {
+                                            text: label + ' (' + percentage + '%)',
+                                            fillStyle: data.datasets[0].backgroundColor[i],
+                                            hidden: false,
+                                            index: i
+                                        };
+                                    });
+                                }
+                                return [];
+                            }
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        titleColor: '#fff',
+                        bodyColor: '#fff',
+                        borderColor: 'rgba(239, 68, 68, 0.5)',
+                        borderWidth: 1,
+                        padding: 12,
+                        callbacks: {
+                            label: function(context) {
+                                const value = context.parsed;
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = ((value / total) * 100).toFixed(1);
+                                return ' ₺' + value.toLocaleString('tr-TR', {minimumFractionDigits: 2}) + ' (' + percentage + '%)';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    } else {
+        giderCtx.style.display = 'none';
+        giderCtx.parentElement.innerHTML = `
+            <div class="flex flex-col items-center justify-center h-full text-slate-400">
+                <i class="fa-solid fa-chart-pie text-6xl mb-4 opacity-20"></i>
+                <p class="text-lg font-semibold">Veri Bulunamadı</p>
+                <p class="text-sm">Seçilen tarih aralığında gider kaydı yok</p>
+            </div>
+        `;
+    }
+
+    // Personel Performans Grafiği
+    const personelCtx = document.getElementById('personelChart');
+    const personelIsimleri = @Html.Raw(ViewBag.PersonelIsimleri);
+    const personelCiro = @Html.Raw(ViewBag.PersonelCiro);
+
+    if (personelIsimleri && personelIsimleri.length > 0) {
+        new Chart(personelCtx, {
+            type: 'bar',
+            data: {
+                labels: personelIsimleri,
+                datasets: [{
+                    label: 'Toplam Ciro',
+                    data: personelCiro,
+                    backgroundColor: 'rgba(139, 92, 246, 0.8)',
+                    borderColor: 'rgb(139, 92, 246)',
+                    borderWidth: 2,
+                    borderRadius: 8,
+                    hoverBackgroundColor: 'rgba(139, 92, 246, 1)'
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        callbacks: {
+                            label: function(context) {
+                                return ' ₺' + context.parsed.x.toLocaleString('tr-TR', {minimumFractionDigits: 2});
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        ticks: {
+                            color: '#64748b',
+                            callback: function(value) {
+                                return '₺' + value.toLocaleString('tr-TR');
+                            }
+                        },
+                        grid: { color: 'rgba(148, 163, 184, 0.1)' }
+                    },
+                    y: {
+                        ticks: { color: '#64748b', font: { weight: '600' } },
+                        grid: { display: false }
+                    }
+                }
+            }
+        });
+    } else {
+        personelCtx.parentElement.innerHTML = `
+            <div class="flex flex-col items-center justify-center h-full text-slate-400">
+                <i class="fa-solid fa-users text-6xl mb-4 opacity-20"></i>
+                <p class="text-lg font-semibold">Personel Verisi Yok</p>
+                <p class="text-sm">Bu dönemde garson ataması yapılmamış</p>
+            </div>
+        `;
+    }
+
+    // Günlük Ciro Trend Grafiği
+    const trendCtx = document.getElementById('trendChart');
+    const gunlukTarihler = @Html.Raw(ViewBag.GunlukTarihler);
+    const gunlukCiroTutarlari = @Html.Raw(ViewBag.GunlukCiroTutarlari);
+
+    new Chart(trendCtx, {
+        type: 'line',
+        data: {
+            labels: gunlukTarihler,
+            datasets: [{
+                label: 'Günlük Ciro',
+                data: gunlukCiroTutarlari,
+                borderColor: 'rgb(6, 182, 212)',
+                backgroundColor: 'rgba(6, 182, 212, 0.1)',
+                borderWidth: 3,
+                tension: 0.4,
+                fill: true,
+                pointBackgroundColor: 'rgb(6, 182, 212)',
+                pointBorderColor: '#fff',
+                pointBorderWidth: 2,
+                pointRadius: 5,
+                pointHoverRadius: 7
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    callbacks: {
+                        label: function(context) {
+                            return ' ₺' + context.parsed.y.toLocaleString('tr-TR', {minimumFractionDigits: 2});
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        color: '#64748b',
+                        callback: function(value) {
+                            return '₺' + value.toLocaleString('tr-TR');
+                        }
+                    },
+                    grid: { color: 'rgba(148, 163, 184, 0.1)' }
+                },
+                x: {
+                    ticks: { color: '#64748b', font: { weight: '600' } },
+                    grid: { display: false }
+                }
+            }
+        }
+    });
+</script>

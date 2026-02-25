@@ -1,0 +1,62 @@
+﻿<!DOCTYPE html>
+<html lang="tr" data-theme="light">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Restoran Menü</title>
+
+    <link rel="stylesheet" href="~/css/daisyui.css" />
+    <script src="~/js/tailwindcss.js"></script>
+    <link rel="stylesheet" href="~/libs/fontawesome/all.min.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: #f3f4f6;
+        }
+
+        .scroll-smooth {
+            scroll-behavior: smooth;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <div class="navbar bg-white shadow-lg sticky top-0 z-50 border-b-2 border-blue-100">
+        <div class="flex-1">
+            <a href="/" class="flex items-center gap-3 px-2 hover:bg-blue-50 rounded-xl transition-all cursor-pointer">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-blue-500/30">
+                    <i class="fa-solid fa-utensils text-lg"></i>
+                </div>
+                <div>
+                    <div class="font-black text-xl text-slate-800 leading-none tracking-tight">RESTORAN</div>
+                    <div class="text-[10px] font-bold text-blue-500 tracking-[0.3em] mt-1">MENÜ</div>
+                </div>
+            </a>
+        </div>
+        <div class="flex-none">
+            <button onclick="document.getElementById('garsonCagirModal')?.showModal()" 
+                    class="btn btn-sm bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white border-0 shadow-md">
+                <i class="fa-solid fa-bell"></i>
+                Garson Çağır
+            </button>
+        </div>
+    </div>
+
+    <main class="flex-grow">
+        @RenderBody()
+    </main>
+
+    <footer class="footer footer-center p-6 text-slate-400 text-xs font-medium mt-auto">
+        <aside>
+            <p>© @DateTime.Now.Year Restoran Yönetim Sistemi - Tüm Hakları Saklıdır.</p>
+        </aside>
+    </footer>
+
+    <div class="fixed bottom-4 right-4 z-50 opacity-50 hover:opacity-100">
+        <a href="/Auth/Login" class="btn btn-circle btn-xs btn-neutral">🔒</a>
+    </div>
+
+</body>
+</html>

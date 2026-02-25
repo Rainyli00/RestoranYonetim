@@ -1,0 +1,433 @@
+﻿@model List<RestoranYonetim.Models.Geribildirim>
+
+@{
+    ViewData["Title"] = "Geri Bildirimler";
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+}
+
+@* Toast Bildirimleri (Silme / Başarı / Hata) *@
+@if (TempData["Success"] != null)
+{
+    <div class="toast toast-top toast-end z-50 transition-all duration-300" id="successToast">
+        <div class="alert alert-success text-white shadow-lg">
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-circle-check text-xl"></i>
+                <span class="font-medium">@TempData["Success"]</span>
+            </div>
+        </div>
+    </div>
+}
+
+@if (TempData["Error"] != null)
+{
+    <div class="toast toast-top toast-end z-50 transition-all duration-300" id="errorToast">
+        <div class="alert alert-error text-white shadow-lg">
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-circle-xmark text-xl"></i>
+                <span class="font-medium">@TempData["Error"]</span>
+            </div>
+        </div>
+    </div>
+}
+
+<script>
+    // Toast bildirimleri 3 saniye sonra otomatik kapat
+    window.addEventListener('DOMContentLoaded', function() {
+        const successToast = document.getElementById('successToast');
+        const errorToast = document.getElementById('errorToast');
+
+        if (successToast) {
+            setTimeout(() => {
+                successToast.style.opacity = '0';
+                successToast.style.transform = 'translateX(100%)';
+                setTimeout(() => successToast.remove(), 300);
+            }, 3000);
+        }
+
+        if (errorToast) {
+            setTimeout(() => {
+                errorToast.style.opacity = '0';
+                errorToast.style.transform = 'translateX(100%)';
+                setTimeout(() => errorToast.remove(), 300);
+            }, 3000);
+        }
+    });
+</script>
+
+<!-- Filtre ve Arama -->
+<div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 mb-6">
+    <form method="get" action="/Admin/GeriBildirimler" class="flex flex-wrap gap-3 items-end">
+        
+        <!-- Tarih Aralığı -->
+        <div class="form-control flex-shrink-0 w-48">
+            <label class="label"><span class="label-text font-semibold">Başlangıç Tarihi</span></label>
+            <input type="date" name="baslangic" value="@ViewBag.Baslangic?.ToString("yyyy-MM-dd")" class="input input-bordered input-sm" />
+        </div>
+
+        <div class="form-control flex-shrink-0 w-48">
+            <label class="label"><span class="label-text font-semibold">Bitiş Tarihi</span></label>
+            <input type="date" name="bitis" value="@ViewBag.Bitis?.ToString("yyyy-MM-dd")" class="input input-bordered input-sm" />
+        </div>
+
+        <div class="form-control flex-shrink-0 w-56">
+            <label class="label"><span class="label-text font-semibold">Kategori / Tür</span></label>
+            @{ 
+                var queryKat = ViewContext.HttpContext.Request.Query["kategoriId"].FirstOrDefault();
+                var hasQueryKat = !string.IsNullOrEmpty(queryKat);
+                var aktifKat = ViewBag.AktifKategori as int?;
+            }
+            <select name="kategoriId" class="select select-bordered select-sm">
+                @if (!hasQueryKat)
+                {
+                    <option value="" selected>Tüm Kategoriler / Türler</option>
+                }
+                else
+                {
+                    <option value="">Tüm Kategoriler / Türler</option>
+                }
+
+                @if (ViewBag.Kategoriler != null)
+                {
+                    foreach (var k in ViewBag.Kategoriler as List<RestoranYonetim.Models.Kategori>)
+                    {
+                        if (hasQueryKat)
+                        {
+                            if (queryKat == k.KategoriId.ToString())
+                            {
+                                <option value="@k.KategoriId" selected>@k.KategoriAdi</option>
+                            }
+                            else
+                            {
+                                <option value="@k.KategoriId">@k.KategoriAdi</option>
+                            }
+                        }
+                        else
+                        {
+                            if (aktifKat.HasValue && aktifKat == k.KategoriId)
+                            {
+                                <option value="@k.KategoriId" selected>@k.KategoriAdi</option>
+                            }
+                            else
+                            {
+                                <option value="@k.KategoriId">@k.KategoriAdi</option>
+                            }
+                        }
+                    }
+                }
+            </select>
+        </div>
+
+        <!-- Ayrı Tür Dropdown -->
+        <div class="form-control flex-shrink-0 w-44">
+            <label class="label"><span class="label-text font-semibold">Tür</span></label>
+            <select name="turAdi" class="select select-bordered select-sm">
+                <option value="" selected="@(string.IsNullOrEmpty(ViewBag.AktifTurAdi as string) ? "selected" : null)">Tüm Türler</option>
+                @if (ViewBag.GeriBildirimTurleri != null)
+                {
+                    foreach (var t in ViewBag.GeriBildirimTurleri as List<RestoranYonetim.Models.GeribildirimTuru>)
+                    {
+                        <option value="@t.TurAdi" selected="@( (ViewBag.AktifTurAdi as string) == t.TurAdi ? "selected" : null)">@t.TurAdi</option>
+                    }
+                }
+            </select>
+        </div>
+
+        <!-- Ürün filtresi kaldırıldı -->
+
+        <!-- Puan Sıralama -->
+        <div class="form-control flex-shrink-0 w-52">
+            <label class="label"><span class="label-text font-semibold">Sıralama</span></label>
+            <select name="siralama" class="select select-bordered select-sm">
+                @{
+                    var siralamaValue = ViewBag.Siralama as string ?? "tarih";
+                }
+                <option value="tarih" selected="@(siralamaValue == "tarih" ? "selected" : null)">Tarihe Göre (Yeni→Eski)</option>
+                <option value="tarih-eski" selected="@(siralamaValue == "tarih-eski" ? "selected" : null)">Tarihe Göre (Eski→Yeni)</option>
+                <option value="puan-yuksek" selected="@(siralamaValue == "puan-yuksek" ? "selected" : null)">Puan (Yüksek→Düşük)</option>
+                <option value="puan-dusuk" selected="@(siralamaValue == "puan-dusuk" ? "selected" : null)">Puan (Düşük→Yüksek)</option>
+            </select>
+        </div>
+
+        <!-- Arama -->
+        <div class="form-control flex-1 min-w-[200px]">
+            <label class="label"><span class="label-text font-semibold">Arama</span></label>
+            <input type="text" name="arama" value="@ViewBag.Arama" placeholder="Yorum veya ürün ara..." class="input input-bordered input-sm w-full" />
+        </div>
+
+        <!-- Butonlar -->
+        <div class="form-control flex-shrink-0 ml-0">
+            <div class="flex gap-2">
+                <button type="submit" class="btn bg-blue-600 hover:bg-blue-700 text-white border-0 btn-sm">
+                    <i class="fa-solid fa-filter"></i> Filtrele
+                </button>
+                <a href="/Admin/GeriBildirimler" class="btn btn-outline btn-sm px-6 gap-2 hover:bg-slate-100 transition-all">
+                    <i class="fa-solid fa-rotate-right"></i> Sıfırla
+                </a>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- İstatistik Kartları (compact) -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+    <!-- Toplam Yorum (compact) -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-3 flex items-center gap-3">
+        <div class="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600">
+            <i class="fa-solid fa-comments text-lg"></i>
+        </div>
+        <div class="flex-1">
+            <div class="text-xs text-slate-500">Toplam Geri Bildirim</div>
+            <div class="text-lg font-semibold text-slate-800">@ViewBag.ToplamYorum</div>
+        </div>
+    </div>
+
+    <!-- Ortalama Puan (compact) -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-3 flex items-center gap-3">
+        <div class="w-9 h-9 rounded-lg bg-amber-50 flex items-center justify-center text-amber-500">
+            <i class="fa-solid fa-star text-lg"></i>
+        </div>
+        <div class="flex-1">
+            <div class="text-xs text-slate-500">Ortalama Puan</div>
+            <div class="text-lg font-semibold text-slate-800">@ViewBag.OrtalamaPuan.ToString("0.0")</div>
+        </div>
+    </div>
+
+    <!-- Puan Dağılımı (compact) -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-3">
+        <h3 class="font-medium text-slate-700 text-xs mb-2">Puan Dağılımı</h3>
+        @{
+            var puanDagilimi = ViewBag.PuanDagilimi;
+            if (puanDagilimi != null)
+            {
+                bool hasData = false;
+                try 
+                {
+                    foreach (var pd in puanDagilimi)
+                    {
+                        hasData = true;
+                        var pdType = pd.GetType();
+                        int puan = (int)pdType.GetProperty("Puan").GetValue(pd);
+                        int adet = (int)pdType.GetProperty("Adet").GetValue(pd);
+
+                        <div class="flex items-center justify-between mb-2 text-sm">
+                            <div class="flex items-center gap-1 text-amber-400">
+                                @for (int i = 0; i < puan; i++)
+                                {
+                                    <i class="fa-solid fa-star text-xs"></i>
+                                }
+                            </div>
+                            <div class="text-slate-600 text-xs">@adet</div>
+                        </div>
+                    }
+                }
+                catch { }
+
+                if (!hasData)
+                {
+                    <p class="text-sm text-slate-500 text-center py-2">Henüz veri yok</p>
+                }
+            }
+            else
+            {
+                <p class="text-sm text-slate-500 text-center py-2">Henüz veri yok</p>
+            }
+        }
+    </div>
+</div>
+
+<!-- En Çok Yorum Alan Ürünler -->
+@{
+    var enCokYorumAlanUrunler = ViewBag.EnCokYorumAlanUrunler;
+    if (enCokYorumAlanUrunler != null)
+    {
+        bool hasUrunler = false;
+        try
+        {
+            foreach (var urun in enCokYorumAlanUrunler)
+            {
+                hasUrunler = true;
+            }
+        }
+        catch { }
+        
+        if (hasUrunler)
+        {
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-6">
+                <h3 class="font-bold text-lg text-slate-800 mb-4">En Çok Yorum Alan Ürünler</h3>
+                <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+                    @foreach (var urun in enCokYorumAlanUrunler)
+                    {
+                        var urunType = urun.GetType();
+                        string urunAdi = (string)urunType.GetProperty("UrunAdi").GetValue(urun);
+                        double ortalamaPuan = (double)urunType.GetProperty("OrtalamaPuan").GetValue(urun);
+                        int yorumSayisi = (int)urunType.GetProperty("YorumSayisi").GetValue(urun);
+
+                        var isSmall = string.Equals(urunAdi, "Izgara Köfte", StringComparison.OrdinalIgnoreCase);
+
+                        <div class="bg-gradient-to-br from-slate-50 to-slate-100 rounded-xl border border-slate-200 @(isSmall ? "p-2" : "p-4")">
+                            <h4 class="font-bold mb-2 truncate @(isSmall ? "text-sm text-slate-800" : "text-base text-slate-800")">@urunAdi</h4>
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="font-bold @(isSmall ? "text-sm text-slate-800" : "text-base text-slate-800")">@ortalamaPuan.ToString("0.0")</span>
+                                <i class="fa-solid fa-star text-amber-400 text-xs"></i>
+                            </div>
+                            <p class="text-xs text-slate-800">@yorumSayisi yorum</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    }
+}
+
+<!-- Geri Bildirim Listesi -->
+@if (!Model.Any())
+{
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-12 text-center">
+        <div class="max-w-md mx-auto">
+            <div class="bg-slate-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="fa-solid fa-comment-slash text-slate-400 text-4xl"></i>
+            </div>
+            <h3 class="text-xl font-bold text-slate-800 mb-2">Geri Bildirim Yok</h3>
+            <p class="text-slate-500">Seçilen kriterlere uygun geri bildirim bulunamadı.</p>
+        </div>
+    </div>
+}
+else
+{
+    <div class="space-y-4">
+        @foreach (var gb in Model)
+        {
+            var isUrunYorumu = gb.Urun != null;
+            var turAdi = gb.Tur?.TurAdi ?? "";
+            var turBadgeClass = turAdi == "Genel" || turAdi == "Hizmet" ? "bg-blue-100 text-blue-700" : "bg-slate-100 text-slate-700";
+            var turIcon = turAdi == "Genel" ? "fa-comment-dots" : turAdi == "Hizmet" ? "fa-hands-helping" : "fa-comment";
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 hover:shadow-md transition-shadow mb-4">
+                <div class="flex items-start justify-between mb-3">
+                    <div class="flex items-center gap-3">
+                        <div class="bg-gradient-to-br from-blue-500 to-indigo-600 w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold text-base">
+                            @gb.Puan
+                        </div>
+                        <div>
+                            @if (isUrunYorumu)
+                            {
+                                <h3 class="font-bold text-slate-800 text-sm">@gb.Urun.UrunAdi</h3>
+                                <p class="text-[11px] text-slate-500">
+                                    @gb.Tarih.ToString("dd MMM yyyy, HH:mm")
+                                    @if (gb.Urun?.Kategori != null)
+                                    {
+                                        <span class="ml-2">• @gb.Urun.Kategori.KategoriAdi</span>
+                                    }
+                                </p>
+                            }
+                            else
+                            {
+                                <span class="inline-flex items-center gap-1 px-2 py-1 rounded @turBadgeClass font-bold text-xs">
+                                    <i class="fa-solid @turIcon"></i> @turAdi
+                                </span>
+                                <p class="text-[11px] text-slate-500">@gb.Tarih.ToString("dd MMM yyyy, HH:mm")</p>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                        <!-- Yıldızlar -->
+                        <div class="text-sm">
+                            @for (int i = 1; i <= 5; i++)
+                            {
+                                if (i <= gb.Puan)
+                                {
+                                    <i class="fa-solid fa-star text-amber-400"></i>
+                                }
+                                else
+                                {
+                                    <i class="fa-regular fa-star text-slate-300"></i>
+                                }
+                            }
+                        </div>
+
+                        <!-- DaisyUI Modal ile Sil Butonu -->
+                        <button type="button" class="btn btn-ghost btn-xs btn-circle text-red-500 hover:bg-red-50" onclick="document.getElementById('modal-@gb.YorumId').showModal()">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                        
+                        <dialog id="modal-@gb.YorumId" class="modal">
+                            <div class="modal-box bg-white max-w-md">
+                                <h3 class="font-bold text-lg text-slate-800 mb-2">
+                                    <i class="fa-solid fa-triangle-exclamation text-warning mr-2"></i>
+                                    Emin misiniz?
+                                </h3>
+                                <p class="text-slate-600 mb-4">
+                                    Geri Bildirim silinecek. Bu işlem geri alınamaz!
+                                </p>
+
+                                <div class="modal-action gap-3">
+                                    <form method="dialog">
+                                        <button class="btn btn-ghost btn-sm">
+                                            <i class="fa-solid fa-xmark mr-1"></i>İptal
+                                        </button>
+                                    </form>
+                                    <form method="post" action="/Admin/GeriBildirimSil">
+                                        <input type="hidden" name="id" value="@gb.YorumId" />
+                                        <button type="submit" class="btn btn-error btn-sm text-white">
+                                            <i class="fa-solid fa-trash mr-1"></i>Sil
+                                        </button>
+                                    </form>
+                                   
+                                </div>
+                            </div>
+                            <form method="dialog" class="modal-backdrop">
+                                <button>Kapat</button>
+                            </form>
+                        </dialog>
+
+
+                    </div>
+                </div>
+
+                <div class="bg-slate-50 rounded-lg p-3 border border-slate-200">
+                    <p class="text-slate-700 text-sm leading-snug">@gb.Yorum</p>
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- Sayfalama -->
+    @if (ViewBag.ToplamSayfa > 1)
+    {
+        <div class="flex justify-center mt-8">
+            <div class="join">
+                @{
+                    var baslangicStr = ViewBag.Baslangic?.ToString("yyyy-MM-dd") ?? "";
+                    var bitisStr = ViewBag.Bitis?.ToString("yyyy-MM-dd") ?? "";
+                    var kategoriStr = ViewBag.AktifKategori != null ? ViewBag.AktifKategori.ToString() : "";
+                    var siralamaStr = ViewBag.Siralama ?? "";
+                    var aramaStr = System.Net.WebUtility.UrlEncode((ViewBag.Arama as string) ?? "");
+
+                    var baseParams = $"&baslangic={baslangicStr}&bitis={bitisStr}&kategoriId={kategoriStr}&siralama={siralamaStr}&arama={aramaStr}";
+                }
+
+                @if (ViewBag.Sayfa > 1)
+                {
+                    <a href="@($"?sayfa={ViewBag.Sayfa - 1}{baseParams}")" class="join-item btn btn-sm hover:bg-blue-50 hover:border-blue-200">«</a>
+                }
+
+                @for (int i = Math.Max(1, ViewBag.Sayfa - 2); i <= Math.Min(ViewBag.ToplamSayfa, ViewBag.Sayfa + 2); i++)
+                {
+                    if (i == ViewBag.Sayfa)
+                    {
+                        <a class="join-item btn btn-sm btn-active bg-blue-600 text-white border-blue-600 hover:bg-blue-700">@i</a>
+                    }
+                    else
+                    {
+                        <a href="@($"?sayfa={i}{baseParams}")" class="join-item btn btn-sm hover:bg-blue-50 hover:border-blue-200">@i</a>
+                    }
+                }
+
+                @if (ViewBag.Sayfa < ViewBag.ToplamSayfa)
+                {
+                    <a href="@($"?sayfa={ViewBag.Sayfa + 1}{baseParams}")" class="join-item btn btn-sm hover:bg-blue-50 hover:border-blue-200">»</a>
+                }
+            </div>
+        </div>
+    }
+}

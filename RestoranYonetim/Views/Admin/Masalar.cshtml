@@ -1,0 +1,246 @@
+﻿@model List<RestoranYonetim.Models.Masa>
+
+@{
+    ViewData["Title"] = "Masa Düzeni";
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+    var masaDurumlari = ViewBag.MasaDurumlari as List<RestoranYonetim.Models.MasaDurum>;
+}
+
+<!-- Toast Bildirimleri -->
+@if (TempData["Success"] != null)
+{
+    <div class="toast toast-top toast-end z-50 transition-all duration-300" id="successToast">
+        <div class="alert alert-success text-white shadow-lg">
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-circle-check text-xl"></i>
+                <span class="font-medium">@TempData["Success"]</span>
+            </div>
+        </div>
+    </div>
+}
+
+@if (TempData["Error"] != null)
+{
+    <div class="toast toast-top toast-end z-50 transition-all duration-300" id="errorToast">
+        <div class="alert alert-error text-white shadow-lg">
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-circle-xmark text-xl"></i>
+                <span class="font-medium">@TempData["Error"]</span>
+            </div>
+        </div>
+    </div>
+}
+
+
+<div class="flex justify-between items-center mb-6">
+    <div class="flex gap-4 text-xs font-bold text-slate-500">
+        <div class="flex items-center gap-1">
+            <span class="w-3 h-3 rounded-full bg-emerald-400"></span> Boş
+        </div>
+        <div class="flex items-center gap-1">
+            <span class="w-3 h-3 rounded-full bg-red-500"></span> Dolu
+        </div>
+        <div class="flex items-center gap-1">
+            <span class="w-3 h-3 rounded-full bg-amber-400"></span> Rezerve
+        </div>
+    </div>
+    <button class="btn bg-blue-600 hover:bg-blue-700 text-white border-0 gap-2 shadow-lg" onclick="document.getElementById('modal_masa_ekle').showModal()">
+        <i class="fa-solid fa-plus"></i> Masa Ekle
+    </button>
+</div>
+
+<div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+@foreach (var m in Model.OrderBy(x => x.MasaAdi))
+{
+        // Duruma göre renk ve ikon belirleme
+        string kartRengi = "bg-white border-slate-200 text-slate-600"; // Varsayılan (Boş)
+        string ikon = "fa-chair";
+        string durumYazisi = m.Durum?.DurumAdi;
+
+        // 1: Boş, 2: Dolu, 3: Rezerve (ID'leri veritabanına göre kontrol et)
+        if (m.DurumId == 2) // Dolu
+        {
+            kartRengi = "bg-red-50 border-red-200 text-red-600";
+            ikon = "fa-utensils animate-pulse";
+        }
+        else if (m.DurumId == 3) // Rezerve
+        {
+            kartRengi = "bg-amber-50 border-amber-200 text-amber-600";
+            ikon = "fa-clock";
+        }
+
+        // Aktif siparişi bul (İptal ve Tamamlanan hariç)
+        var aktifSiparis = m.Siparis.Where(s => s.SiparisDurumId == 1 || s.SiparisDurumId == 2).FirstOrDefault();
+
+        <div class="card border shadow-sm hover:shadow-md transition-all cursor-pointer @kartRengi"
+             onclick="duzenleModaliniAc(this)"
+             data-id="@m.MasaId"
+             data-ad="@m.MasaAdi"
+             data-durum="@m.DurumId">
+
+            <div class="card-body p-4 items-center text-center">
+                <i class="fa-solid @ikon text-3xl mb-2 opacity-80"></i>
+                <h2 class="card-title text-lg">@m.MasaAdi</h2>
+
+                <div class="badge badge-sm border-none bg-white/50 font-bold">
+                    @durumYazisi
+                </div>
+
+                @if (aktifSiparis != null)
+                {
+                    <div class="mt-2 text-xs font-mono font-bold bg-white/60 px-2 py-1 rounded">
+                        Sipariş #@aktifSiparis.SiparisId
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+<dialog id="modal_masa_ekle" class="modal">
+    <div class="modal-box bg-white">
+        <form method="dialog"><button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button></form>
+        <h3 class="font-bold text-lg text-slate-800 mb-4">Yeni Masa Ekle</h3>
+        <form action="/Admin/MasaEkle" method="post">
+            <div class="form-control mb-4">
+                <label class="label"><span class="label-text font-bold">Masa Adı</span></label>
+                <input type="text" name="masaAdi" placeholder="Örn: Bahçe-5" class="input input-bordered w-full bg-slate-50" required />
+            </div>
+            <button type="submit" class="btn bg-blue-600 hover:bg-blue-700 text-white border-0 w-full">Kaydet</button>
+        </form>
+    </div>
+</dialog>
+
+<dialog id="modal_masa_duzenle" class="modal">
+    <div class="modal-box bg-white">
+        <form method="dialog"><button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button></form>
+        <h3 class="font-bold text-lg text-slate-800 mb-4">Masa Düzenle</h3>
+
+        <form action="/Admin/MasaGuncelle" method="post" class="space-y-4">
+            <input type="hidden" name="masaId" id="edit_id" />
+
+            <div class="form-control">
+                <label class="label"><span class="label-text font-bold">Masa Adı</span></label>
+                <input type="text" name="masaAdi" id="edit_ad" class="input input-bordered w-full bg-slate-50" required />
+            </div>
+
+            <div class="form-control">
+                <label class="label"><span class="label-text font-bold">Durumu</span></label>
+                <select name="durumId" id="edit_durum" class="select select-bordered w-full bg-slate-50">
+                    @if (masaDurumlari != null)
+                    {
+                        foreach (var md in masaDurumlari)
+                        {
+                            <option value="@md.DurumId">@md.DurumAdi</option>
+                        }
+                    }
+                </select>
+            </div>
+
+            <button type="submit" class="btn bg-blue-600 hover:bg-blue-700 text-white border-0 w-full">Güncelle</button>
+        </form>
+
+        <div class="divider">veya</div>
+        <button type="button" onclick="masaSilModalAc()" class="btn btn-ghost btn-sm text-error w-full hover:bg-red-50">
+            <i class="fa-solid fa-trash"></i> Masayı Sil
+        </button>
+    </div>
+</dialog>
+
+<!-- Masa Silme Onay Modal -->
+<dialog id="modal_masa_sil" class="modal">
+    <div class="modal-box bg-white max-w-md">
+        <h3 class="font-bold text-lg text-slate-800 mb-2">
+            <i class="fa-solid fa-triangle-exclamation text-warning mr-2"></i>
+            Emin misiniz?
+        </h3>
+        <p class="text-slate-600 mb-4">
+            <span id="silinecek_masa_ad" class="font-bold text-error"></span> silinecek. Bu işlem geri alınamaz!
+        </p>
+
+        <div class="modal-action">
+            <form method="dialog" class="flex gap-2 w-full">
+                <button class="btn btn-ghost flex-1">
+                    <i class="fa-solid fa-xmark mr-1"></i> İptal
+                </button>
+                <button type="button" onclick="masaSilOnayla()" class="btn btn-error text-white flex-1">
+                    <i class="fa-solid fa-trash mr-1"></i> Sil
+                </button>
+            </form>
+        </div>
+    </div>
+    <form method="dialog" class="modal-backdrop">
+        <button>Kapat</button>
+    </form>
+</dialog>
+
+<script>
+    // Toast bildirimleri 3 saniye sonra otomatik kapat
+    window.addEventListener('DOMContentLoaded', function() {
+        const successToast = document.getElementById('successToast');
+        const errorToast = document.getElementById('errorToast');
+
+        if (successToast) {
+            setTimeout(() => {
+                successToast.style.opacity = '0';
+                successToast.style.transform = 'translateX(100%)';
+                setTimeout(() => successToast.remove(), 300);
+            }, 3000);
+        }
+
+        if (errorToast) {
+            setTimeout(() => {
+                errorToast.style.opacity = '0';
+                errorToast.style.transform = 'translateX(100%)';
+                setTimeout(() => errorToast.remove(), 300);
+            }, 3000);
+        }
+    });
+
+    let silinecekMasaId = null;
+    let silinecekMasaAd = null;
+
+    function duzenleModaliniAc(kart) {
+        var id = kart.getAttribute('data-id');
+        var ad = kart.getAttribute('data-ad');
+        var durum = kart.getAttribute('data-durum');
+
+        document.getElementById('edit_id').value = id;
+        document.getElementById('edit_ad').value = ad;
+        document.getElementById('edit_durum').value = durum;
+
+        // Silme için ID ve adı sakla
+        silinecekMasaId = id;
+        silinecekMasaAd = ad;
+
+        document.getElementById('modal_masa_duzenle').showModal();
+    }
+
+    function masaSilModalAc() {
+        // Önce düzenleme modalını kapat
+        document.getElementById('modal_masa_duzenle').close();
+        
+        // Masa adını modal'a yaz
+        document.getElementById('silinecek_masa_ad').textContent = silinecekMasaAd;
+        
+        // Silme onay modalını aç
+        document.getElementById('modal_masa_sil').showModal();
+    }
+
+    function masaSilOnayla() {
+        if (silinecekMasaId) {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '/Admin/MasaSil';
+
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'id';
+            input.value = silinecekMasaId;
+
+            form.appendChild(input);
+            document.body.appendChild(form);
+            form.submit();
+        }
+    }
+</script>

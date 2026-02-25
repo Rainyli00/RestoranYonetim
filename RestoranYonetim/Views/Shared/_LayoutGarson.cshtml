@@ -1,0 +1,270 @@
+﻿@using Microsoft.AspNetCore.Http
+<!DOCTYPE html>
+<html lang="tr" data-theme="light">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Garson Paneli</title>
+    
+    <!-- Tailwind CSS + DaisyUI -->
+    <link rel="stylesheet" href="~/css/daisyui.css" />
+    <script src="~/js/tailwindcss.js"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="~/libs/fontawesome/all.min.css" />
+    
+    <!-- Google Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: #f1f5f9;
+        }
+        
+        .sidebar-transition {
+            transition: transform 0.3s ease-in-out;
+        }
+        
+        /* Smooth scroll */
+        html {
+            scroll-behavior: smooth;
+        }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        
+        /* Sayfa Yüklenme Animasyonu */
+        .fade-in-up {
+            animation: fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @@keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        /* Aktif Menü Tasarımı */
+        .nav-item.active {
+            background: linear-gradient(90deg, #3b82f6 0%, #4f46e5 100%);
+            color: white;
+            box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.3);
+        }
+
+        .nav-item.active i {
+            color: white !important;
+        }
+
+        /* Hover Efekti */
+        .nav-item:not(.active):hover {
+            background-color: #dbeafe;
+            color: #4f46e5;
+            transform: translateX(5px);
+        }
+    </style>
+</head>
+<body class="bg-slate-50">
+    <!-- Drawer Layout (Mobil için) -->
+    <div class="drawer lg:drawer-open">
+        <input id="mobile-drawer" type="checkbox" class="drawer-toggle" />
+        
+        <div class="drawer-content flex flex-col min-h-screen transition-all duration-300 lg:ml-72">
+            <!-- Navbar -->
+            <div class="navbar sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-slate-200 px-6 h-20">
+                <div class="navbar-start">
+                    <label for="mobile-drawer" class="btn btn-square btn-ghost lg:hidden text-slate-600">
+                        <i class="fa-solid fa-bars-staggered text-xl"></i>
+                    </label>
+                    <div class="hidden md:block ml-2">
+                        <h2 class="text-xl font-bold text-slate-800 tracking-tight">@ViewData["Title"]</h2>
+                    </div>
+                </div>
+                
+                <div class="navbar-center lg:hidden">
+                    <h2 class="text-lg font-bold text-slate-800">@ViewData["Title"]</h2>
+                </div>
+                
+                <div class="navbar-end gap-4">
+                    <!-- Panel Değiştirme (Sadece Yöneticiler için) -->
+                    @if (Context.Session.GetInt32("RolId") == 2)
+                    {
+                        <a href="/Admin/Index" class="btn btn-sm bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white border-0 gap-2 shadow-lg">
+                            <i class="fa-solid fa-shield-halved"></i>
+                            Admin Paneli
+                        </a>
+                    }
+                    
+                    <!-- Kullanıcı Profil Kutusu -->
+                    <div class="flex items-center gap-3 bg-gradient-to-r from-slate-50 to-slate-100 px-4 py-2 rounded-xl border border-slate-200">
+                        <div class="avatar placeholder">
+                            <div class="bg-gradient-to-br from-blue-600 to-indigo-600 text-white rounded-xl w-10 shadow-lg shadow-blue-500/30">
+                                <span class="text-lg font-bold">@((ViewBag.AdSoyad as string)?.Substring(0, 1).ToUpper() ?? "G")</span>
+                            </div>
+                        </div>
+                        <div class="text-left hidden sm:block">
+                            <div class="text-sm font-bold text-slate-700 leading-tight">@(ViewBag.AdSoyad ?? "Garson")</div>
+                            <div class="text-[10px] font-bold text-blue-500 uppercase tracking-wider">
+                                @if (Context.Session.GetInt32("RolId") == 2)
+                                {
+                                    <span>YÖNETİCİ</span>
+                                }
+                                else
+                                {
+                                    <span>GARSON</span>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Çıkış Butonu -->
+                    <a href="/Auth/Logout" class="btn btn-ghost btn-circle text-red-500 hover:bg-red-50 hover:text-red-600 transition-all group relative" title="Çıkış Yap">
+                        <i class="fa-solid fa-arrow-right-from-bracket text-xl group-hover:scale-110 transition-transform"></i>
+                        <span class="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                            Çıkış Yap
+                        </span>
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Ana İçerik -->
+            <main class="p-6 lg:p-10 flex-grow fade-in-up">
+                @RenderBody()
+            </main>
+            
+            <!-- Footer -->
+            <footer class="footer footer-center p-6 text-slate-400 text-xs font-medium">
+                <aside>
+                    <p>© @DateTime.Now.Year Restoran Yönetim Sistemi - Tüm Hakları Saklıdır.</p>
+                </aside>
+            </footer>
+        </div>
+        
+        <div class="drawer-side z-50">
+            <label for="mobile-drawer" aria-label="close sidebar" class="drawer-overlay"></label>
+            
+            <!-- Sidebar -->
+            <ul class="menu p-4 w-72 h-screen bg-white text-base-content border-r border-slate-200 flex flex-col fixed left-0 top-0">
+                <li class="mb-8 mt-2">
+                    <a href="/Garson/Index" class="flex items-center gap-3 px-2 hover:bg-slate-50 rounded-xl transition-all cursor-pointer">
+                        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-blue-500/30">
+                            <i class="fa-solid fa-utensils text-lg"></i>
+                        </div>
+                        <div>
+                            <div class="font-black text-xl text-slate-800 leading-none tracking-tight">RESTORAN</div>
+                            <div class="text-[10px] font-bold text-blue-500 tracking-[0.3em] mt-1">GARSON</div>
+                        </div>
+                    </a>
+                </li>
+
+                <div class="space-y-1 flex-1 overflow-y-auto">
+                    <li class="menu-title font-bold text-xs text-slate-400 px-4 mb-2">MENÜ</li>
+
+                    <li>
+                        <a href="/Garson/Index" class="nav-item @(ViewData["Title"]?.ToString().Contains("Masa") == true ? "active" : "") rounded-xl font-medium py-3 mb-1 transition-all">
+                            <i class="fa-solid fa-chair w-6 text-center text-slate-400"></i> Masa Listesi
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/Garson/AktifSiparisler" class="nav-item @(ViewData["Title"]?.ToString().Contains("Aktif") == true ? "active" : "") rounded-xl font-medium py-3 mb-1 transition-all">
+                            <i class="fa-solid fa-list-check w-6 text-center text-slate-400"></i> Aktif Siparişler
+                        </a>
+                    </li>
+                </div>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script>
+        // Drawer'ı kapat (mobil)
+        document.querySelectorAll('.drawer-side a:not(.dropdown a)').forEach(link => {
+            link.addEventListener('click', () => {
+                document.getElementById('mobile-drawer').checked = false;
+            });
+        });
+        
+        // Alert auto-close (Garson çağrı bildirimleri hariç)
+        setTimeout(() => {
+            document.querySelectorAll('.alert:not(.alert-warning)').forEach(alert => {
+                alert.style.transition = 'opacity 0.5s';
+                alert.style.opacity = '0';
+                setTimeout(() => alert.remove(), 500);
+            });
+        }, 5000);
+        
+        // =====================================================
+        // OTURUM ZAMAN AŞIMI - 15 dk hareketsizlik sonrası çıkış
+        // =====================================================
+        const OTURUM_SURESI = 15 * 60 * 1000; // 15 dakika (milisaniye)
+        const UYARI_SURESI = 2 * 60 * 1000; // Son 2 dakika uyarı göster
+        let sonHareketZamani = Date.now();
+        let uyariGosterildi = false;
+        
+        // Kullanıcı hareketlerini dinle
+        ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart', 'click'].forEach(event => {
+            document.addEventListener(event, () => {
+                sonHareketZamani = Date.now();
+                uyariGosterildi = false;
+                // Uyarı varsa kapat
+                const uyari = document.getElementById('oturum-uyari');
+                if (uyari) uyari.remove();
+            }, { passive: true });
+        });
+        
+        // Her 30 saniyede kontrol et
+        setInterval(() => {
+            const gecenSure = Date.now() - sonHareketZamani;
+            const kalanSure = OTURUM_SURESI - gecenSure;
+            
+            // Süre doldu, çıkış yap
+            if (kalanSure <= 0) {
+                window.location.href = '/Auth/Logout?reason=timeout';
+                return;
+            }
+            
+            // Son 2 dakika kaldıysa uyarı göster
+            if (kalanSure <= UYARI_SURESI && !uyariGosterildi) {
+                uyariGosterildi = true;
+                const kalanDakika = Math.ceil(kalanSure / 60000);
+                
+                const uyariDiv = document.createElement('div');
+                uyariDiv.id = 'oturum-uyari';
+                uyariDiv.className = 'fixed bottom-4 right-4 z-[100] bg-warning text-warning-content p-4 rounded-xl shadow-2xl max-w-sm animate-bounce';
+                uyariDiv.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <i class="fa-solid fa-clock text-2xl"></i>
+                        <div>
+                            <div class="font-bold">Oturum Süresi Doluyor!</div>
+                            <div class="text-sm">${kalanDakika} dakika içinde çıkış yapılacak. Devam etmek için herhangi bir yere tıklayın.</div>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(uyariDiv);
+            }
+        }, 30000); // 30 saniye
+    </script>
+</body>
+</html>
+

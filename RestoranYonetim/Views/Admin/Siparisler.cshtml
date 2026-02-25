@@ -1,0 +1,321 @@
+﻿@model List<RestoranYonetim.Models.Siparis>
+
+@{
+    ViewData["Title"] = "Sipariş Geçmişi";
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+
+    var baslangic = ViewBag.Baslangic as DateTime?;
+    var bitis = ViewBag.Bitis as DateTime?; // Controller'dan dolu geliyor
+    var aktifDurum = ViewBag.AktifDurum as int?;
+    var aktifSiralama = ViewBag.Siralama as string ?? "tarih";
+    var durumlar = ViewBag.Durumlar as List<RestoranYonetim.Models.SiparisDurum>;
+    var arama = ViewBag.Arama as string;
+
+    var siparisSayisi = Model.Count;
+}
+
+<div class="flex flex-col md:flex-row justify-between items-end mb-6 gap-4">
+    <div>
+   
+        <p class="text-sm text-slate-900">
+            @{
+                var toplamKayit = ViewBag.ToplamKayit as int? ?? siparisSayisi;
+                var sayfa = ViewBag.Sayfa as int? ?? 1;
+                var toplamSayfa = ViewBag.ToplamSayfa as int? ?? 1;
+            }
+            @if (toplamSayfa > 1)
+            {
+                <span>@toplamKayit sipariş · Sayfa @sayfa/@toplamSayfa</span>
+            }
+            else
+            {
+                <span>@toplamKayit sipariş</span>
+            }
+        </p>
+    </div>
+
+    <div class="flex gap-3">
+        
+    </div>
+</div>
+
+<div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 mb-6">
+    <form method="get" action="/Admin/Siparisler" id="filterForm" class="flex flex-wrap gap-4 items-end">
+
+        <div class="form-control flex-1 min-w-[200px]">
+            <label class="label pb-1"><span class="label-text text-xs font-bold text-slate-500">Ara</span></label>
+            <input type="text"
+                   name="arama"
+                   value="@arama"
+                   placeholder="Sipariş no, masa, garson, tutar..."
+                   class="input input-bordered input-sm bg-slate-50" />
+        </div>
+
+        <div class="form-control">
+            <label class="label pb-1"><span class="label-text text-xs font-bold text-slate-500">Başlangıç</span></label>
+            <input type="date"
+                   name="baslangic"
+                   value="@(baslangic.HasValue? baslangic.Value.ToString("yyyy-MM-dd") : "")"
+                   class="input input-bordered input-sm bg-slate-50"
+                   onchange="this.form.submit()" />
+        </div>
+
+        <div class="form-control">
+            <label class="label pb-1"><span class="label-text text-xs font-bold text-slate-500">Bitiş</span></label>
+            <input type="date"
+                   name="bitis"
+                   value="@(bitis.Value.ToString("yyyy-MM-dd"))"
+                   class="input input-bordered input-sm bg-slate-50"
+                   onchange="this.form.submit()" />
+        </div>
+
+        <div class="form-control w-40">
+            <label class="label pb-1"><span class="label-text text-xs font-bold text-slate-500">Durum</span></label>
+            <select name="durumId"
+                    class="select select-bordered select-sm bg-slate-50"
+                    onchange="this.form.submit()">
+                <option value="">Tümü</option>
+                @if (durumlar != null)
+                {
+                    foreach (var d in durumlar)
+                    {
+                        <option value="@d.SiparisDurumId" selected="@(aktifDurum == d.SiparisDurumId)">@d.DurumAdi</option>
+                    }
+                }
+            </select>
+        </div>
+
+        <div class="form-control w-44">
+            <label class="label pb-1"><span class="label-text text-xs font-bold text-slate-500">Sırala</span></label>
+            <select name="siralama" class="select select-bordered select-sm bg-slate-50">
+                <option value="tarih" selected="@(aktifSiralama == "tarih")">Tarihe Göre (Yeni→Eski)</option>
+                <option value="tarih-eski" selected="@(aktifSiralama == "tarih-eski")">Tarihe Göre (Eski→Yeni)</option>
+                <option value="tutar-azalan" selected="@(aktifSiralama == "tutar-azalan")">Tutar (Yüksek→Düşük)</option>
+                <option value="tutar-artan" selected="@(aktifSiralama == "tutar-artan")">Tutar (Düşük→Yüksek)</option>
+            </select>
+        </div>
+
+        <div class="flex gap-2 pb-0.5">
+            <button type="submit" class="btn bg-blue-600 hover:bg-blue-700 text-white border-0 btn-sm px-6">
+                <i class="fa-solid fa-filter"></i> Filtrele
+            </button>
+            <a href="/Admin/Siparisler" class="btn btn-outline btn-sm px-6 gap-2 hover:bg-slate-100 transition-all">
+                <i class="fa-solid fa-rotate-right"></i> Sıfırla
+            </a>
+        </div>
+    </form>
+</div>
+
+<div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+    <table class="table w-full">
+        <thead class="bg-slate-50 text-slate-500 uppercase text-xs">
+            <tr>
+                <th>No</th>
+                <th>Masa</th>
+                <th>Garson</th>
+                <th>Tarih</th>
+                <th>Durum</th>
+                <th class="text-right">Tutar</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (Model.Count == 0)
+            {
+                <tr>
+                    <td colspan="7" class="text-center py-8 text-slate-400">
+                        <i class="fa-solid fa-inbox text-4xl mb-2 opacity-30"></i>
+                        <div>Kayıt bulunamadı.</div>
+                    </td>
+                </tr>
+            }
+
+            @foreach (var s in Model)
+            {
+                var siparisTutari = s.SiparisUrun.Sum(u => u.Adet * u.BirimFiyat);
+                var rowId = "row_" + s.SiparisId;
+
+                <tr class="hover:bg-slate-50 border-b border-slate-100">
+                    <td class="font-mono font-bold text-slate-500">#@s.SiparisId</td>
+                    <td>@(s.Masa != null ? s.Masa.MasaAdi : "Paket/Yok")</td>
+                    <td>@(s.Garson != null ? s.Garson.AdSoyad : "-")</td>
+                    <td>
+                        <div class="text-sm">@s.OlusturmaTarihi.ToString("dd.MM.yyyy")</div>
+                        <div class="text-xs text-slate-400">@s.OlusturmaTarihi.ToString("HH:mm")</div>
+                    </td>
+                    <td>
+                        @switch (s.SiparisDurumId)
+                        {
+                            case 1:
+                                <span class="badge badge-info badge-sm text-white">Hazırlanıyor</span>
+                                ; break;
+                            case 2:
+                                <span class="badge badge-warning badge-sm text-white">Servis Edildi</span>
+                                ; break;
+                            case 3:
+                                <span class="badge badge-success badge-sm text-white">Tamamlandı</span>
+                                ; break;
+                            case 4:
+                                <span class="badge badge-error badge-sm text-white">İptal</span>
+                                ; break;
+                            default:
+                                <span class="badge badge-ghost badge-sm">@s.SiparisDurum?.DurumAdi</span>
+                                ; break;
+                        }
+                    </td>
+                    <td class="text-right font-bold text-slate-700">
+                        @siparisTutari.ToString("C2")
+                    </td>
+                    <td class="text-right">
+                        <button class="btn btn-ghost btn-xs text-blue-600" onclick="toggleDetay('@rowId')">
+                            Detay <i class="fa-solid fa-chevron-down text-[10px]"></i>
+                        </button>
+                    </td>
+                </tr>
+
+                <tr id="@rowId" class="hidden bg-slate-50/50">
+                    <td colspan="7" class="p-0">
+                        <div class="p-4 pl-12">
+                            <div class="overflow-x-auto border rounded-lg bg-white shadow-sm max-w-2xl">
+                                <table class="table table-xs w-full">
+                                    <thead class="bg-slate-50">
+                                        <tr>
+                                            <th>Ürün</th>
+                                            <th class="text-center">Adet</th>
+                                            <th class="text-right">Birim</th>
+                                            <th class="text-right">Toplam</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var urun in s.SiparisUrun)
+                                        {
+                                            <tr>
+                                                <td>@urun.Urun?.UrunAdi</td>
+                                                <td class="text-center">@urun.Adet</td>
+                                                <td class="text-right">@urun.BirimFiyat.ToString("C2")</td>
+                                                <td class="text-right font-bold">
+                                                    @((urun.Adet * urun.BirimFiyat).ToString("C2"))
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                            
+                            @* Ödeme Bilgisi *@
+                            @if (s.SiparisDurumId == 3 && s.Odeme.Any())
+                            {
+                                var odeme = s.Odeme.FirstOrDefault();
+                                <div class="mt-3 flex items-center gap-2">
+                                    <span class="text-xs font-bold text-slate-500">Ödeme Yöntemi:</span>
+                                    @if (odeme?.OdemeTuruId == 1)
+                                    {
+                                        <span class="badge badge-success badge-sm gap-1">
+                                            <i class="fa-solid fa-money-bill-wave text-[10px]"></i>
+                                            @odeme.OdemeTuru?.OdemeTuruAdi
+                                        </span>
+                                    }
+                                    else if (odeme?.OdemeTuruId == 2)
+                                    {
+                                        <span class="badge badge-info badge-sm gap-1">
+                                            <i class="fa-solid fa-credit-card text-[10px]"></i>
+                                            @odeme.OdemeTuru?.OdemeTuruAdi
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge badge-ghost badge-sm">
+                                            @odeme?.OdemeTuru?.OdemeTuruAdi
+                                        </span>
+                                    }
+                                </div>
+                            }
+                            
+                            @if (!string.IsNullOrEmpty(s.Notlar))
+                            {
+                                <div class="mt-2 text-xs text-slate-500">
+                                    <span class="font-bold">Not:</span> @s.Notlar
+                                </div>
+                            }
+                        </div>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<!-- Sayfalama -->
+@if (ViewBag.ToplamSayfa > 1)
+{
+    var sayfaNo = ViewBag.Sayfa;
+    var toplamSayfaSayisi = ViewBag.ToplamSayfa;
+    var toplamKayitSayisi = ViewBag.ToplamKayit;
+
+    <div class="flex flex-col sm:flex-row justify-between items-center gap-4 mt-6">
+        <div class="text-sm text-slate-500">
+            Toplam <span class="font-bold text-slate-700">@toplamKayitSayisi</span> kayıt bulundu
+        </div>
+
+        <div class="join">
+            @* İlk Sayfa *@
+            @if (sayfaNo > 1)
+            {
+                <a href="/Admin/Siparisler?sayfa=1&baslangic=@baslangic?.ToString("yyyy-MM-dd")&bitis=@bitis?.ToString("yyyy-MM-dd")&durumId=@aktifDurum&arama=@arama" 
+                   class="join-item btn btn-sm">
+                    <i class="fa-solid fa-angles-left"></i>
+                </a>
+                <a href="/Admin/Siparisler?sayfa=@(sayfaNo - 1)&baslangic=@baslangic?.ToString("yyyy-MM-dd")&bitis=@bitis?.ToString("yyyy-MM-dd")&durumId=@aktifDurum&arama=@arama" 
+                   class="join-item btn btn-sm">
+                    <i class="fa-solid fa-angle-left"></i>
+                </a>
+            }
+
+            @* Sayfa Numaraları *@
+            @for (int i = Math.Max(1, sayfaNo - 2); i <= Math.Min(toplamSayfaSayisi, sayfaNo + 2); i++)
+            {
+                if (i == sayfaNo)
+                {
+                    <a class="join-item btn btn-sm btn-active bg-blue-600 text-white border-blue-600 hover:bg-blue-700">@i</a>
+                }
+                else
+                {
+                    <a href="/Admin/Siparisler?sayfa=@i&baslangic=@baslangic?.ToString("yyyy-MM-dd")&bitis=@bitis?.ToString("yyyy-MM-dd")&durumId=@aktifDurum&arama=@arama" 
+                       class="join-item btn btn-sm hover:bg-blue-50 hover:border-blue-200">@i</a>
+                }
+            }
+
+            @* Son Sayfa *@
+            @if (sayfaNo < toplamSayfaSayisi)
+            {
+                <a href="/Admin/Siparisler?sayfa=@(sayfaNo + 1)&baslangic=@baslangic?.ToString("yyyy-MM-dd")&bitis=@bitis?.ToString("yyyy-MM-dd")&durumId=@aktifDurum&arama=@arama" 
+                   class="join-item btn btn-sm">
+                    <i class="fa-solid fa-angle-right"></i>
+                </a>
+                <a href="/Admin/Siparisler?sayfa=@toplamSayfaSayisi&baslangic=@baslangic?.ToString("yyyy-MM-dd")&bitis=@bitis?.ToString("yyyy-MM-dd")&durumId=@aktifDurum&arama=@arama" 
+                   class="join-item btn btn-sm">
+                    <i class="fa-solid fa-angles-right"></i>
+                </a>
+            }
+        </div>
+    </div>
+}
+
+<script>
+    // Detay toggle
+    function toggleDetay(id) {
+        const row = document.getElementById(id);
+        row.classList.toggle('hidden');
+
+        // Chevron rotasyonu
+        const button = event.target.closest('button');
+        const icon = button.querySelector('i');
+        if (row.classList.contains('hidden')) {
+            icon.classList.remove('fa-chevron-up');
+            icon.classList.add('fa-chevron-down');
+        } else {
+            icon.classList.remove('fa-chevron-down');
+            icon.classList.add('fa-chevron-up');
+        }
+    }
+</script>

@@ -1,0 +1,358 @@
+﻿@model List<RestoranYonetim.Models.Kategori>
+@{
+    ViewData["Title"] = "Kategoriler";
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+}
+
+<!-- Toast Bildirimleri (Sağ Üstte) -->
+@if (TempData["Success"] != null)
+{
+    <div class="toast toast-top toast-end z-50 transition-all duration-300" id="successToast">
+        <div class="alert alert-success text-white shadow-lg">
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-circle-check text-xl"></i>
+                <span class="font-medium">@TempData["Success"]</span>
+            </div>
+        </div>
+    </div>
+}
+
+@if (TempData["Error"] != null)
+{
+    <div class="toast toast-top toast-end z-50 transition-all duration-300" id="errorToast">
+        <div class="alert alert-error text-white shadow-lg">
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-circle-xmark text-xl"></i>
+                <span class="font-medium">@TempData["Error"]</span>
+            </div>
+        </div>
+    </div>
+}
+
+<div class="flex justify-between items-center mb-6">
+    <div>
+    </div>
+    <button class="btn bg-blue-600 hover:bg-blue-700 text-white border-0 gap-2 shadow-lg" onclick="document.getElementById('modal_kat_ekle').showModal()">
+        <i class="fa-solid fa-plus"></i> Kategori Ekle
+    </button>
+</div>
+
+<!-- İstatistikler -->
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+    <div class="stats shadow-sm bg-white border border-slate-200">
+        <div class="stat py-3">
+            <div class="stat-figure text-blue-500">
+                <i class="fa-solid fa-layer-group text-2xl"></i>
+            </div>
+            <div class="stat-title text-xs">Toplam Kategori Sayısı</div>
+            <div class="stat-value text-2xl text-blue-600">@Model.Count</div>
+        </div>
+    </div>
+    
+    <div class="stats shadow-sm bg-white border border-slate-200">
+        <div class="stat py-3">
+            <div class="stat-figure text-green-500">
+                <i class="fa-solid fa-utensils text-2xl"></i>
+            </div>
+            <div class="stat-title text-xs">Toplam Ürün Sayısı</div>
+            <div class="stat-value text-2xl text-green-600">@Model.Sum(k => k.Urun.Count)</div>
+        </div>
+    </div>
+</div>
+
+<!-- Arama ve Filtreleme -->
+<div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 mb-6">
+    <form method="get" action="/Admin/Kategoriler" id="filterForm" class="flex gap-3 items-end flex-wrap">
+        <!-- Arama -->
+        <div class="form-control flex-1 min-w-[250px]">
+            <label class="label pb-1">
+                <span class="label-text text-xs font-bold">
+                    <i class="fa-solid fa-magnifying-glass mr-1"></i> Ara
+                </span>
+            </label>
+            <input type="text"
+                   name="arama"
+                   value="@ViewBag.Arama"
+                   placeholder="Kategori adı veya sıra no..."
+                   class="input input-bordered input-sm bg-slate-50" />
+        </div>
+
+        <!-- Butonlar -->
+        <div class="flex gap-2">
+            <button type="submit" class="btn bg-blue-600 hover:bg-blue-700 text-white border-0 btn-sm px-6">
+                <i class="fa-solid fa-filter"></i> Filtrele
+            </button>
+            <a href="/Admin/Kategoriler" class="btn btn-outline btn-sm px-6 gap-2 hover:bg-slate-100 transition-all">
+                <i class="fa-solid fa-rotate-right"></i> Sıfırla
+            </a>
+        </div>
+    </form>
+</div>
+
+<div class="overflow-x-auto bg-white rounded-2xl shadow-sm border border-slate-200">
+    <table class="table w-full">
+        <thead class="bg-slate-50 text-slate-500 uppercase text-xs">
+            <tr>
+                <th>Resim</th>
+                <th>Sıra</th>
+                <th>Kategori Adı</th>
+                <th>Ürün Sayısı</th>
+                <th class="text-right">İşlem</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var k in Model)
+            {
+                <tr class="hover:bg-slate-50">
+                    <td>
+                        <div class="avatar">
+                            <div class="mask mask-squircle w-10 h-10 bg-slate-100">
+                                @if (!string.IsNullOrEmpty(k.ResimUrl))
+                                {
+                                    <img src="@k.ResimUrl" />
+                                }
+                                else
+                                {
+
+                                    <span class="flex items-center justify-center h-full text-xs">Yok</span>
+                                }
+                            </div>
+                        </div>
+                    </td>
+                    <td class="font-bold text-slate-400">#@k.SiraNo</td>
+                    <td class="font-bold text-slate-700">
+                        @k.KategoriAdi
+                        @if (k.KategoriAdi.ToLower() == "diğer" || k.KategoriAdi.ToLower() == "diger")
+                        {
+                            <span class="badge badge-warning badge-xs ml-2">🔒 Korumalı</span>
+                        }
+                    </td>
+                    <td>
+                        <span class="badge bg-slate-800 text-white border-0 badge-sm font-semibold">@k.Urun.Count ürün</span>
+                        @if ((k.KategoriAdi.ToLower() == "diğer" || k.KategoriAdi.ToLower() == "diger") && k.Urun.Count > 0)
+                        {
+                            <span class="badge badge-warning badge-xs ml-1">⚠️ Dikkat</span>
+                        }
+                    </td>
+                    <td class="text-right">
+                        <button class="btn btn-ghost btn-xs text-blue-600"
+                                onclick="katDuzenle(this)"
+                                data-id="@k.KategoriId"
+                                data-ad="@k.KategoriAdi"
+                                data-sira="@k.SiraNo"
+                                data-url="@k.ResimUrl">
+                            <i class="fa-solid fa-pen"></i>
+                        </button>
+                        @if (k.KategoriAdi.ToLower() == "diğer" || k.KategoriAdi.ToLower() == "diger")
+                        {
+                            <button class="btn btn-ghost btn-xs text-slate-300 cursor-not-allowed" disabled title="Bu kategori silinemez">
+                                <i class="fa-solid fa-lock"></i>
+                            </button>
+                        }
+                        else
+                        {
+                            if (k.Urun.Count > 0)
+                            {
+                                <button class="btn btn-ghost btn-xs text-amber-600" 
+                                        onclick="digereTasiModal(@k.KategoriId, '@k.KategoriAdi.Replace("'", "\'")', @k.Urun.Count)"
+                                        title="Kategoriyi Boşalt">
+                                    <i class="fa-solid fa-box-open"></i>
+                                </button>
+                            }
+                            <button class="btn btn-ghost btn-xs text-red-500" 
+                                    onclick="kategoriSilModal(@k.KategoriId, '@k.KategoriAdi.Replace("'", "\'")', @k.Urun.Count)">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<!-- Sayfalama ve Bilgi -->
+@if (ViewBag.ToplamSayfa > 1)
+{
+    <div class="flex justify-between items-center mt-6">
+        <!-- Sol: Kayıt Bilgisi -->
+        <div class="text-sm text-slate-600">
+            Toplam <span class="font-bold text-slate-800">@ViewBag.ToplamKayit</span> kategori
+            @if (!string.IsNullOrWhiteSpace(ViewBag.Arama))
+            {
+                <span class="badge badge-primary badge-sm ml-2">Filtrelenmiş</span>
+            }
+        </div>
+
+        <!-- Sağ: Sayfalama Butonları -->
+        <div class="join">
+            @if (ViewBag.Sayfa > 1)
+            {
+                <a href="/Admin/Kategoriler?sayfa=@(ViewBag.Sayfa - 1)&arama=@ViewBag.Arama" class="join-item btn btn-sm">«</a>
+            }
+            
+            @for (int i = Math.Max(1, ViewBag.Sayfa - 2); i <= Math.Min(ViewBag.ToplamSayfa, ViewBag.Sayfa + 2); i++)
+            {
+                <a href="/Admin/Kategoriler?sayfa=@i&arama=@ViewBag.Arama" 
+                   class="join-item btn btn-sm @(i == ViewBag.Sayfa ? "btn-active bg-blue-600 text-white border-blue-600 hover:bg-blue-700" : "hover:bg-blue-50 hover:border-blue-200")">@i</a>
+            }
+            
+            @if (ViewBag.Sayfa < ViewBag.ToplamSayfa)
+            {
+                <a href="/Admin/Kategoriler?sayfa=@(ViewBag.Sayfa + 1)&arama=@ViewBag.Arama" class="join-item btn btn-sm">»</a>
+            }
+        </div>
+    </div>
+}
+else if (ViewBag.ToplamKayit > 0)
+{
+    <div class="text-center text-sm text-slate-600 mt-4">
+        Toplam <span class="font-bold text-slate-800">@ViewBag.ToplamKayit</span> kategori
+        @if (!string.IsNullOrWhiteSpace(ViewBag.Arama))
+        {
+            <span class="badge badge-primary badge-sm ml-2">Filtrelenmiş</span>
+        }
+    </div>
+}
+
+<dialog id="modal_kat_ekle" class="modal">
+    <div class="modal-box bg-white">
+        <form method="dialog"><button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button></form>
+        <h3 class="font-bold text-lg mb-4">Kategori Ekle</h3>
+        <form action="/Admin/KategoriEkle" method="post" class="space-y-3">
+            <input type="text" name="ad" placeholder="Kategori Adı" class="input input-bordered w-full bg-slate-50" required />
+            <input type="number" name="sira" placeholder="Sıra No" class="input input-bordered w-full bg-slate-50" required />
+            <input type="text" name="url" placeholder="Resim URL (http://...)" class="input input-bordered w-full bg-slate-50" />
+            <button class="btn bg-blue-600 hover:bg-blue-700 text-white border-0 w-full mt-2">Kaydet</button>
+        </form>
+    </div>
+</dialog>
+
+<dialog id="modal_kat_duzenle" class="modal">
+    <div class="modal-box bg-white">
+        <form method="dialog"><button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button></form>
+        <h3 class="font-bold text-lg mb-4">Kategori Düzenle</h3>
+        <form action="/Admin/KategoriGuncelle" method="post" class="space-y-3">
+            <input type="hidden" name="id" id="edit_id" />
+            <input type="text" name="ad" id="edit_ad" class="input input-bordered w-full bg-slate-50" required />
+            <input type="number" name="sira" id="edit_sira" class="input input-bordered w-full bg-slate-50" required />
+            <input type="text" name="url" id="edit_url" class="input input-bordered w-full bg-slate-50" />
+            <button class="btn bg-blue-600 hover:bg-blue-700 text-white border-0 w-full mt-2">Güncelle</button>
+        </form>
+    </div>
+</dialog>
+
+<!-- "Diğer"e Taşı Onay Modal -->
+<dialog id="modal_digere_tasi" class="modal">
+    <div class="modal-box bg-white max-w-md">
+        <h3 class="font-bold text-lg text-slate-800 mb-2">
+            <i class="fa-solid fa-triangle-exclamation text-warning mr-2"></i>
+            Emin misiniz?
+        </h3>
+        <p class="text-slate-600 mb-4">
+            <span id="tasi_mesaj" class="font-bold text-warning"></span>
+            <br>
+            <span class="text-base font-semibold">Bu işlem geri alınamaz!</span>
+        </p>
+
+        <div class="modal-action">
+            <form action="/Admin/KategoriUrunleriDigereTasi" method="post" id="form_digere_tasi" class="flex gap-2 w-full">
+                <input type="hidden" name="id" id="tasi_kategori_id" />
+                <button type="button" class="btn btn-ghost flex-1" onclick="document.getElementById('modal_digere_tasi').close()">
+                    <i class="fa-solid fa-xmark mr-1"></i> İptal
+                </button>
+                <button type="submit" class="btn btn-warning text-white flex-1">
+                    <i class="fa-solid fa-box-open mr-1"></i> Taşı
+                </button>
+            </form>
+        </div>
+    </div>
+    <form method="dialog" class="modal-backdrop">
+        <button>Kapat</button>
+    </form>
+</dialog>
+
+<!-- Kategori Sil Onay Modal -->
+<dialog id="modal_kategori_sil" class="modal">
+    <div class="modal-box bg-white max-w-md">
+        <h3 class="font-bold text-lg text-slate-800 mb-2">
+            <i class="fa-solid fa-triangle-exclamation text-warning mr-2"></i>
+            Emin misiniz?
+        </h3>
+        <p class="text-slate-600 mb-4">
+            <span id="sil_mesaj" class="font-bold text-error"></span>
+            <br>
+            <span id="sil_detay" class="text-base"></span>
+            <br>
+            <span class="text-base font-semibold">Bu işlem geri alınamaz!</span>
+        </p>
+
+        <div class="modal-action">
+            <form action="/Admin/KategoriSil" method="post" id="form_kategori_sil" class="flex gap-2 w-full">
+                <input type="hidden" name="id" id="sil_kategori_id" />
+                <button type="button" class="btn btn-ghost flex-1" onclick="document.getElementById('modal_kategori_sil').close()">
+                    <i class="fa-solid fa-xmark mr-1"></i> İptal
+                </button>
+                <button type="submit" class="btn btn-error text-white flex-1">
+                    <i class="fa-solid fa-trash mr-1"></i> Sil
+                </button>
+            </form>
+        </div>
+    </div>
+    <form method="dialog" class="modal-backdrop">
+        <button>Kapat</button>
+    </form>
+</dialog>
+
+<script>
+    // Toast bildirimleri 3 saniye sonra otomatik kapat
+    window.addEventListener('DOMContentLoaded', function() {
+        const successToast = document.getElementById('successToast');
+        const errorToast = document.getElementById('errorToast');
+
+        if (successToast) {
+            setTimeout(() => {
+                successToast.style.opacity = '0';
+                successToast.style.transform = 'translateX(100%)';
+                setTimeout(() => successToast.remove(), 300);
+            }, 3000);
+        }
+
+        if (errorToast) {
+            setTimeout(() => {
+                errorToast.style.opacity = '0';
+                errorToast.style.transform = 'translateX(100%)';
+                setTimeout(() => errorToast.remove(), 300);
+            }, 3000);
+        }
+    });
+
+    function katDuzenle(btn) {
+        document.getElementById('edit_id').value = btn.getAttribute('data-id');
+        document.getElementById('edit_ad').value = btn.getAttribute('data-ad');
+        document.getElementById('edit_sira').value = btn.getAttribute('data-sira');
+        document.getElementById('edit_url').value = btn.getAttribute('data-url');
+        document.getElementById('modal_kat_duzenle').showModal();
+    }
+
+    function digereTasiModal(id, ad, urunSayisi) {
+        document.getElementById('tasi_kategori_id').value = id;
+        document.getElementById('tasi_mesaj').textContent = 
+            `"${ad}" kategorisindeki ${urunSayisi} ürün "Diğer" kategorisine taşınacak.`;
+        document.getElementById('modal_digere_tasi').showModal();
+    }
+
+    function kategoriSilModal(id, ad, urunSayisi) {
+        document.getElementById('sil_kategori_id').value = id;
+        document.getElementById('sil_mesaj').textContent = `"${ad}" kategorisini silmek istediğinize emin misiniz?`;
+        
+        if (urunSayisi > 0) {
+            document.getElementById('sil_detay').textContent = 
+                `İçindeki ${urunSayisi} ürün "Diğer" kategorisine taşınacaktır.`;
+        } else {
+            document.getElementById('sil_detay').textContent = 'Bu kategoride ürün bulunmamaktadır.';
+        }
+        
+        document.getElementById('modal_kategori_sil').showModal();
+    }
+</script>

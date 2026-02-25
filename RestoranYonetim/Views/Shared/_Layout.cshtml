@@ -1,0 +1,63 @@
+﻿<!DOCTYPE html>
+<html lang="tr" data-theme="light">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Restoran Yönetim</title>
+
+    <!-- DaisyUI CSS -->
+    <link rel="stylesheet" href="~/css/daisyui.css" asp-append-version="true" />
+
+    <!-- Tailwind CSS -->
+    <script src="~/js/tailwindcss.js"></script>
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body class="bg-base-100">
+    <header>
+        <!-- DaisyUI Navbar -->
+        <div class="navbar bg-base-200 shadow-lg">
+            <div class="navbar-start">
+                <div class="dropdown">
+                    <div tabindex="0" role="button" class="btn btn-ghost lg:hidden">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h8m-8 6h16" />
+                        </svg>
+                    </div>
+                    <ul tabindex="0" class="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-52">
+                        <li><a asp-controller="Home" asp-action="Index">Ana Sayfa</a></li>
+                        <li><a asp-controller="Home" asp-action="Privacy">Gizlilik</a></li>
+                    </ul>
+                </div>
+                <a class="btn btn-ghost text-xl" asp-controller="Home" asp-action="Index">
+                    🍽️ Restoran Yönetim
+                </a>
+            </div>
+            <div class="navbar-center hidden lg:flex">
+                <ul class="menu menu-horizontal px-1">
+                    <li><a asp-controller="Home" asp-action="Index">Ana Sayfa</a></li>
+                    <li><a asp-controller="Home" asp-action="Privacy">Gizlilik</a></li>
+                </ul>
+            </div>
+            <div class="navbar-end">
+                <a class="btn btn-primary btn-sm">Giriş Yap</a>
+            </div>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 py-8">
+        @RenderBody()
+    </main>
+
+    <footer class="footer footer-center p-6 text-slate-400 text-xs font-medium">
+        <aside>
+            <p>© @DateTime.Now.Year Restoran Yönetim Sistemi - Tüm Hakları Saklıdır.</p>
+        </aside>
+    </footer>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

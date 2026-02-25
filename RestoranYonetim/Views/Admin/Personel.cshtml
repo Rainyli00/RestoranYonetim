@@ -1,0 +1,580 @@
+﻿@model List<RestoranYonetim.Models.Personel>
+
+@{
+    ViewData["Title"] = "Personel Yönetimi";
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+    var personelListesi = Model ?? new List<RestoranYonetim.Models.Personel>();
+    var aktifDurum = ViewBag.AktifDurum as int?;
+    var aktifRol = ViewBag.AktifRol as int?;
+    var arama = ViewBag.Arama as string;
+}
+
+<!-- Toast Bildirimleri (Sağ Üstte) -->
+@if (TempData["Success"] != null)
+{
+    <div class="toast toast-top toast-end z-50 transition-all duration-300" id="successToast">
+        <div class="alert alert-success text-white shadow-lg">
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-circle-check text-xl"></i>
+                <span class="font-medium">@TempData["Success"]</span>
+            </div>
+        </div>
+    </div>
+}
+
+@if (TempData["Error"] != null)
+{
+    <div class="toast toast-top toast-end z-50 transition-all duration-300" id="errorToast">
+        <div class="alert alert-error text-white shadow-lg">
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-circle-xmark text-xl"></i>
+                <span class="font-medium">@TempData["Error"]</span>
+            </div>
+        </div>
+    </div>
+}
+
+<div class="flex justify-between items-center mb-6">
+<div>
+ 
+</div>
+    <button class="btn bg-blue-600 hover:bg-blue-700 text-white border-0 gap-2 shadow-lg" onclick="document.getElementById('modal_personel_ekle').showModal()">
+        <i class="fa-solid fa-user-plus"></i> Yeni Personel
+    </button>
+</div>
+
+<!-- İstatistik Kartları -->
+<div class="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6">
+    @{
+        var toplamKayit = ViewBag.ToplamKayit as int? ?? personelListesi.Count;
+        var sayfa = ViewBag.Sayfa as int? ?? 1;
+        var toplamSayfa = ViewBag.ToplamSayfa as int? ?? 1;
+        
+        // Tüm personel listesinden istatistikleri hesapla (İşten çıkarılanlar hariç)
+        var tumPersoneller = personelListesi;
+        var aktifPersonelSayisi = tumPersoneller.Count(p => p.HesapDurumId == 1);
+        var mesaidekiPersonelSayisi = tumPersoneller.Count(p => p.MesaiDurumId == 2);
+        var izinliPersonelSayisi = tumPersoneller.Count(p => p.HesapDurumId == 2);
+        var toplamPersonelSayisi = tumPersoneller.Count(p => p.HesapDurumId != 4); // İşten çıkarılanlar hariç
+    }
+    
+    <div class="stats shadow-sm bg-white border border-slate-200">
+        <div class="stat py-3">
+            <div class="stat-figure text-blue-500">
+                <i class="fa-solid fa-users text-2xl"></i>
+            </div>
+            <div class="stat-title text-xs">Toplam Personel</div>
+            <div class="stat-value text-2xl text-blue-600">@toplamPersonelSayisi</div>
+        </div>
+    </div>
+    
+    <div class="stats shadow-sm bg-white border border-slate-200">
+        <div class="stat py-3">
+            <div class="stat-figure text-green-500">
+                <i class="fa-solid fa-user-check text-2xl"></i>
+            </div>
+            <div class="stat-title text-xs">Aktif Personel</div>
+            <div class="stat-value text-2xl text-green-600">@aktifPersonelSayisi</div>
+        </div>
+    </div>
+    
+    <div class="stats shadow-sm bg-white border border-slate-200">
+        <div class="stat py-3">
+            <div class="stat-figure text-blue-500">
+                <i class="fa-solid fa-clock text-2xl"></i>
+            </div>
+            <div class="stat-title text-xs">Mesaide</div>
+            <div class="stat-value text-2xl text-blue-600">@mesaidekiPersonelSayisi</div>
+        </div>
+    </div>
+    
+    <div class="stats shadow-sm bg-white border border-slate-200">
+        <div class="stat py-3">
+            <div class="stat-figure text-orange-500">
+                <i class="fa-solid fa-umbrella-beach text-2xl"></i>
+            </div>
+            <div class="stat-title text-xs">İzinli</div>
+            <div class="stat-value text-2xl text-orange-600">@izinliPersonelSayisi</div>
+        </div>
+    </div>
+</div>
+
+<!-- Arama ve Filtreleme -->
+<div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 mb-6">
+    <form method="get" action="/Admin/Personel" id="filterForm" class="flex gap-3 items-end flex-wrap">
+        <!-- Arama -->
+        <div class="form-control flex-1 min-w-[200px]">
+            <label class="label pb-1">
+                <span class="label-text text-xs font-bold">
+                    <i class="fa-solid fa-magnifying-glass mr-1"></i> Ara
+                </span>
+            </label>
+            <input type="text"
+                   name="arama"
+                   value="@arama"
+                   placeholder="Ad, telefon, email..."
+                   class="input input-bordered input-sm bg-slate-50" />
+        </div>
+
+        <!-- Durum Filtresi -->
+        <div class="form-control w-40">
+            <label class="label pb-1">
+                <span class="label-text text-xs font-bold">
+                    <i class="fa-solid fa-filter mr-1"></i> Durum
+                </span>
+            </label>
+            <select name="durum" class="select select-bordered select-sm bg-slate-50" onchange="document.getElementById('filterForm').submit()">
+                <option value="" selected="@(aktifDurum == null)">Tümü</option>
+                <option value="1" selected="@(aktifDurum == 1)">Aktif</option>
+                <option value="2" selected="@(aktifDurum == 2)">İzinli</option>
+                <option value="3" selected="@(aktifDurum == 3)">Pasif</option>
+                <option value="4" selected="@(aktifDurum == 4)">İşten Ayrılanlar</option>
+            </select>
+        </div>
+
+        <!-- Rol Filtresi -->
+        <div class="form-control w-32">
+            <label class="label pb-1">
+                <span class="label-text text-xs font-bold">
+                    <i class="fa-solid fa-user-tag mr-1"></i> Görevi
+                </span>
+            </label>
+            <select name="rol" class="select select-bordered select-sm bg-slate-50" onchange="document.getElementById('filterForm').submit()">
+                <option value="" selected="@(aktifRol == null)">Tümü</option>
+                <option value="1" selected="@(aktifRol == 1)">Garson</option>
+                <option value="2" selected="@(aktifRol == 2)">Yönetici</option>
+            </select>
+        </div>
+
+        <!-- Butonlar -->
+        <div class="flex gap-2">
+            <button type="submit" class="btn bg-blue-600 hover:bg-blue-700 text-white border-0 btn-sm px-6">
+                <i class="fa-solid fa-filter"></i> Filtrele
+            </button>
+            <a href="/Admin/Personel" class="btn btn-outline btn-sm px-6 gap-2 hover:bg-slate-100 transition-all">
+                <i class="fa-solid fa-rotate-right"></i> Sıfırla
+            </a>
+        </div>
+    </form>
+</div>
+
+<div class="overflow-x-auto bg-white rounded-2xl shadow-sm border border-slate-200">
+    <table class="table w-full">
+        <thead class="bg-slate-50 text-slate-500 uppercase text-xs">
+            <tr>
+                <th>Personel</th>
+                <th>İletişim</th>
+                <th>Görevi</th>
+                <th>Durum</th>
+                <th>Mesai</th>
+                <th class="text-right">İşlem</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (personelListesi.Any())
+            {
+                @foreach (var p in personelListesi)
+                {
+                    // Ayrılanları silik göster (ID: 4)
+                    var rowClass = p.HesapDurumId == 4 ? "opacity-50 grayscale bg-slate-50" : "hover:bg-slate-50";
+
+                    <tr class="@rowClass transition-colors">
+                        <td>
+                            <div class="flex items-center space-x-3">
+                                <div class="avatar placeholder">
+                                    <div class="mask mask-squircle w-10 h-10 bg-blue-100 text-blue-600 font-bold">
+                                        <span>@(!string.IsNullOrEmpty(p.AdSoyad) ? p.AdSoyad.Substring(0, 1).ToUpper() : "?")</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="font-bold text-slate-700">@p.AdSoyad</div>
+                                    <div class="text-xs opacity-50">@p.KullaniciAdi</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="text-sm">@p.Telefon</div>
+                            <div class="text-xs opacity-50">@p.Email</div>
+                        </td>
+                        <td>
+                            @if (p.RolId == 2)
+                            {
+                                <span class="badge badge-warning badge-sm font-bold">Yönetici</span>
+                            }
+                            else if (p.RolId == 1)
+                            {
+                                <span class="badge badge-info badge-sm text-white">Garson</span>
+                            }
+                            else
+                            {
+                                <span class="badge badge-ghost badge-sm">Diğer</span>
+                            }
+                        </td>
+                        <td>
+                            @switch (p.HesapDurumId)
+                            {
+                                case 1:
+                                    <span class="badge badge-success badge-sm text-white">Aktif</span>
+                                    break;
+                                case 2:
+                                    <span class="badge badge-warning badge-sm text-white">İzinli</span>
+                                    break;
+                                case 3:
+                                    <span class="badge badge-ghost badge-sm">Pasif</span>
+                                    break;
+                                case 4:
+                                    <span class="badge badge-error badge-sm text-white">Ayrıldı</span>
+                                    break;
+                            }
+                        </td>
+                        <td>
+                            @if (p.MesaiDurumId == 2)
+                            {
+                                <div class="flex items-center gap-2 text-green-600">
+                                    <span class="relative flex h-2 w-2">
+                                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                                        <span class="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                                    </span>
+                                    <span class="text-xs font-bold">Mesaide</span>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="flex items-center gap-2 text-slate-400">
+                                    <span class="relative flex h-2 w-2">
+                                        <span class="relative inline-flex rounded-full h-2 w-2 bg-slate-300"></span>
+                                    </span>
+                                    <span class="text-xs">Mesai Dışı</span>
+                                </div>
+                            }
+                        </td>
+                        <th class="text-right">
+                            <button class="btn btn-ghost btn-xs text-slate-400 hover:text-blue-600"
+                                    onclick="duzenleModaliniAc(this)"
+                                    data-id="@p.PersonelId"
+                                    data-ad="@p.AdSoyad"
+                                    data-kadi="@p.KullaniciAdi"
+                                    data-rol="@p.RolId"
+                                    data-tel="@p.Telefon"
+                                    data-email="@p.Email"
+                                    data-adres="@p.Adres"
+                                    data-durum="@p.HesapDurumId"
+                                    data-mesai="@p.MesaiDurumId">
+                                <i class="fa-solid fa-pen"></i>
+                            </button>
+
+                            @if (p.HesapDurumId != 4)
+                            {
+                                <button class="btn btn-ghost btn-xs text-slate-400 hover:text-red-500"
+                                        onclick="personelSilModalAc(@p.PersonelId, '@p.AdSoyad')">
+                                    <i class="fa-solid fa-user-xmark"></i>
+                                </button>
+                            }
+                        </th>
+                    </tr>
+                }
+            }
+            else
+            {
+                <tr>
+                    <td colspan="6" class="text-center py-8">
+                        <div class="flex flex-col items-center justify-center text-slate-400">
+                            <i class="fa-solid fa-users-slash text-4xl mb-3"></i>
+                            <p class="text-sm">
+                                @if (!string.IsNullOrWhiteSpace(arama))
+                                {
+                                    <span>"@arama" için sonuç bulunamadı</span>
+                                }
+                                else
+                                {
+                                    <span>Bu filtrede personel bulunamadı</span>
+                                }
+                            </p>
+                        </div>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<!-- Sayfalama -->
+@if (ViewBag.Sayfa != null && ViewBag.ToplamSayfa != null)
+{
+    int sayfaNo = (int)ViewBag.Sayfa;
+    int toplamSayfaSayisi = (int)ViewBag.ToplamSayfa;
+    int toplamKayitSayisi = (int)ViewBag.ToplamKayit;
+
+    <div class="flex flex-col sm:flex-row justify-between items-center gap-4 mt-6">
+        <div class="text-sm text-slate-500">
+            Toplam <span class="font-bold text-slate-700">@toplamKayitSayisi</span> kayıt bulundu
+            <span class="text-xs text-slate-400 ml-2">(Sayfa @sayfaNo/@toplamSayfaSayisi)</span>
+        </div>
+
+        @if (toplamSayfaSayisi > 1)
+        {
+            <div class="join">
+                @* İlk Sayfa *@
+                @if (sayfaNo > 1)
+                {
+                    <a href="/Admin/Personel?sayfa=1&durum=@aktifDurum&rol=@aktifRol&arama=@arama" 
+                       class="join-item btn btn-sm">
+                        <i class="fa-solid fa-angles-left"></i>
+                    </a>
+                    <a href="/Admin/Personel?sayfa=@(sayfaNo - 1)&durum=@aktifDurum&rol=@aktifRol&arama=@arama" 
+                       class="join-item btn btn-sm">
+                        <i class="fa-solid fa-angle-left"></i>
+                    </a>
+                }
+
+                @* Sayfa Numaraları *@
+                @for (int i = Math.Max(1, sayfaNo - 2); i <= Math.Min(toplamSayfaSayisi, sayfaNo + 2); i++)
+                {
+                    if (i == sayfaNo)
+                    {
+                        <a class="join-item btn btn-sm btn-active bg-blue-600 text-white border-blue-600 hover:bg-blue-700">@i</a>
+                    }
+                    else
+                    {
+                        <a href="/Admin/Personel?sayfa=@i&durum=@aktifDurum&rol=@aktifRol&arama=@arama" 
+                           class="join-item btn btn-sm hover:bg-blue-50 hover:border-blue-200">@i</a>
+                    }
+                }
+
+                @* Son Sayfa *@
+                @if (sayfaNo < toplamSayfaSayisi)
+                {
+                    <a href="/Admin/Personel?sayfa=@(sayfaNo + 1)&durum=@aktifDurum&rol=@aktifRol&arama=@arama" 
+                       class="join-item btn btn-sm">
+                        <i class="fa-solid fa-angle-right"></i>
+                    </a>
+                    <a href="/Admin/Personel?sayfa=@toplamSayfaSayisi&durum=@aktifDurum&rol=@aktifRol&arama=@arama" 
+                       class="join-item btn btn-sm">
+                        <i class="fa-solid fa-angles-right"></i>
+                    </a>
+                }
+            </div>
+        }
+    </div>
+}
+
+<dialog id="modal_personel_ekle" class="modal">
+    <div class="modal-box bg-white">
+        <form method="dialog"><button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button></form>
+        <h3 class="font-bold text-lg text-slate-800 mb-4">Yeni Personel Ekle</h3>
+
+        <form action="/Admin/PersonelEkle" method="post" class="space-y-3">
+            <div class="form-control">
+                <label class="label"><span class="label-text text-xs font-bold">Ad Soyad</span></label>
+                <input type="text" name="adSoyad" class="input input-bordered input-sm bg-slate-50" required />
+            </div>
+            <div class="form-control">
+                <label class="label"><span class="label-text text-xs font-bold">Kullanıcı Adı</span></label>
+                <input type="text" name="kullaniciAdi" class="input input-bordered input-sm bg-slate-50" required />
+            </div>
+            <div class="form-control">
+                <label class="label"><span class="label-text text-xs font-bold">Şifre</span></label>
+                <input type="password" name="sifre" class="input input-bordered input-sm bg-slate-50" placeholder="******" required />
+            </div>
+            <div class="flex gap-2">
+                <div class="form-control w-1/2">
+                    <label class="label"><span class="label-text text-xs font-bold">Telefon</span></label>
+                    <input type="text" name="telefon" class="input input-bordered input-sm bg-slate-50" />
+                </div>
+                <div class="form-control w-1/2">
+                    <label class="label"><span class="label-text text-xs font-bold">Email</span></label>
+                    <input type="email" name="email" class="input input-bordered input-sm bg-slate-50" />
+                </div>
+            </div>
+            <div class="form-control">
+                <label class="label"><span class="label-text text-xs font-bold">Görevi</span></label>
+                <select name="rolId" class="select select-bordered select-sm bg-slate-50">
+                    <option value="1">Garson</option>
+                    <option value="2">Yönetici</option>
+                </select>
+            </div>
+            <div class="form-control">
+                <label class="label"><span class="label-text text-xs font-bold">Adres</span></label>
+                <textarea name="adres" class="textarea textarea-bordered bg-slate-50 h-16"></textarea>
+            </div>
+
+            <div class="modal-action">
+                <button type="submit" class="btn bg-blue-600 hover:bg-blue-700 text-white border-0 w-full">Kaydet</button>
+            </div>
+        </form>
+    </div>
+</dialog>
+
+<dialog id="modal_personel_duzenle" class="modal">
+    <div class="modal-box bg-white">
+        <form method="dialog"><button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button></form>
+        <h3 class="font-bold text-lg text-slate-800 mb-4">Personel Düzenle</h3>
+
+        <form action="/Admin/PersonelGuncelle" method="post" class="space-y-3">
+            <input type="hidden" name="personelId" id="edit_id" />
+
+            <div class="form-control">
+                <label class="label"><span class="label-text text-xs font-bold">Ad Soyad</span></label>
+                <input type="text" name="adSoyad" id="edit_ad" class="input input-bordered input-sm bg-slate-50" required />
+            </div>
+            <div class="form-control">
+                <label class="label"><span class="label-text text-xs font-bold">Kullanıcı Adı</span></label>
+                <input type="text" name="kullaniciAdi" id="edit_kadi" class="input input-bordered input-sm bg-slate-50" required />
+            </div>
+            <div class="form-control">
+                <label class="label"><span class="label-text text-xs font-bold">Yeni Şifre (Boş bırakırsan değişmez)</span></label>
+                <input type="password" name="yeniSifre" class="input input-bordered input-sm bg-slate-50" placeholder="******" />
+            </div>
+            <div class="flex gap-2">
+                <div class="form-control w-1/2">
+                    <label class="label"><span class="label-text text-xs font-bold">Telefon</span></label>
+                    <input type="text" name="telefon" id="edit_tel" class="input input-bordered input-sm bg-slate-50" />
+                </div>
+                <div class="form-control w-1/2">
+                    <label class="label"><span class="label-text text-xs font-bold">Email</span></label>
+                    <input type="email" name="email" id="edit_email" class="input input-bordered input-sm bg-slate-50" />
+                </div>
+            </div>
+            <div class="flex gap-2">
+                <div class="form-control w-1/2">
+                    <label class="label"><span class="label-text text-xs font-bold">Görevi</span></label>
+                    <select name="rolId" id="edit_rol" class="select select-bordered select-sm bg-slate-50">
+                        <option value="1">Garson</option>
+                        <option value="2">Yönetici</option>
+                    </select>
+                </div>
+                <div class="form-control w-1/2">
+                    <label class="label"><span class="label-text text-xs font-bold">Hesap Durumu</span></label>
+                    <select name="hesapDurumId" id="edit_durum" class="select select-bordered select-sm bg-slate-50">
+                        <option value="1">Aktif</option>
+                        <option value="2">İzinli</option>
+                        <option value="3">Pasif</option>
+                        <option value="4">İşten Ayrıldı</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-control">
+                <label class="label"><span class="label-text text-xs font-bold">Mesai Durumu</span></label>
+                <select name="mesaiDurumId" id="edit_mesai" class="select select-bordered select-sm bg-slate-50">
+                    <option value="1">Mesai Dışı</option>
+                    <option value="2">Mesaide</option>
+                </select>
+            </div>
+            <div class="form-control">
+                <label class="label"><span class="label-text text-xs font-bold">Adres</span></label>
+                <textarea name="adres" id="edit_adres" class="textarea textarea-bordered bg-slate-50 h-16"></textarea>
+            </div>
+
+            <div class="modal-action">
+                <button type="submit" class="btn bg-blue-600 hover:bg-blue-700 text-white border-0 w-full">Güncelle</button>
+            </div>
+        </form>
+    </div>
+</dialog>
+
+<!-- Personel Silme Onay Modal -->
+<dialog id="modal_personel_sil" class="modal">
+    <div class="modal-box bg-white max-w-md">
+        <h3 class="font-bold text-lg text-slate-800 mb-2">
+            <i class="fa-solid fa-triangle-exclamation text-warning mr-2"></i>
+            Emin misiniz?
+        </h3>
+        <p class="text-slate-600 mb-4">
+            <span id="silinecek_personel_ad" class="font-bold text-error"></span> işten çıkarılacak.
+
+        </p>
+
+        <div class="modal-action">
+            <form method="dialog" class="flex gap-2 w-full">
+                <button class="btn btn-ghost flex-1">
+                    <i class="fa-solid fa-xmark mr-1"></i> İptal
+                </button>
+                <button type="button" onclick="personelSilOnayla()" class="btn btn-error text-white flex-1">
+                    <i class="fa-solid fa-user-xmark mr-1"></i> İşten Çıkar
+                </button>
+            </form>
+        </div>
+    </div>
+    <form method="dialog" class="modal-backdrop">
+        <button>Kapat</button>
+    </form>
+</dialog>
+
+<script>
+    let silinecekPersonelId = null;
+
+    // Toast bildirimleri 3 saniye sonra otomatik kapat
+    window.addEventListener('DOMContentLoaded', function() {
+        const successToast = document.getElementById('successToast');
+        const errorToast = document.getElementById('errorToast');
+
+        if (successToast) {
+            setTimeout(() => {
+                successToast.style.opacity = '0';
+                successToast.style.transform = 'translateX(100%)';
+                setTimeout(() => successToast.remove(), 300);
+            }, 3000);
+        }
+
+        if (errorToast) {
+            setTimeout(() => {
+                errorToast.style.opacity = '0';
+                errorToast.style.transform = 'translateX(100%)';
+                setTimeout(() => errorToast.remove(), 300);
+            }, 3000);
+        }
+    });
+
+    function duzenleModaliniAc(btn) {
+        // Butondaki verileri al
+        const id = btn.getAttribute('data-id');
+        const ad = btn.getAttribute('data-ad');
+        const kadi = btn.getAttribute('data-kadi');
+        const rol = btn.getAttribute('data-rol');
+        const tel = btn.getAttribute('data-tel');
+        const email = btn.getAttribute('data-email');
+        const adres = btn.getAttribute('data-adres');
+        const durum = btn.getAttribute('data-durum');
+
+        // Modaldaki inputlara bas
+        document.getElementById('edit_id').value = id;
+        document.getElementById('edit_ad').value = ad;
+        document.getElementById('edit_kadi').value = kadi;
+        document.getElementById('edit_rol').value = rol;
+        document.getElementById('edit_tel').value = tel;
+        document.getElementById('edit_email').value = email;
+        document.getElementById('edit_adres').value = adres;
+        document.getElementById('edit_durum').value = durum;
+        
+        const mesai = btn.getAttribute('data-mesai');
+        document.getElementById('edit_mesai').value = mesai;
+
+        // Modalı aç
+        document.getElementById('modal_personel_duzenle').showModal();
+    }
+
+    // Personel silme modalını aç
+    function personelSilModalAc(id, adSoyad) {
+        silinecekPersonelId = id;
+        document.getElementById('silinecek_personel_ad').textContent = adSoyad;
+        document.getElementById('modal_personel_sil').showModal();
+    }
+
+    // Personel silmeyi onayla
+    function personelSilOnayla() {
+        if (silinecekPersonelId) {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '/Admin/PersonelSil';
+
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'id';
+            input.value = silinecekPersonelId;
+
+            form.appendChild(input);
+            document.body.appendChild(form);
+            form.submit();
+        }
+    }
+</script>

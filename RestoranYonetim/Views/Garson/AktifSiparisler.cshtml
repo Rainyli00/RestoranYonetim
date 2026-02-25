@@ -1,0 +1,167 @@
+﻿@model List<RestoranYonetim.Models.Siparis>
+
+@{
+    ViewData["Title"] = "Aktif Siparişler";
+    Layout = "~/Views/Shared/_LayoutGarson.cshtml";
+}
+
+
+@if (!Model.Any())
+{
+    <div class="bg-white rounded-xl shadow-lg border border-slate-200 p-8 text-center">
+        <div class="max-w-md mx-auto">
+            <div class="bg-slate-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="fa-solid fa-clipboard-list text-slate-400 text-4xl"></i>
+            </div>
+            <h3 class="text-xl font-bold text-slate-800 mb-2">Aktif Sipariş Yok</h3>
+            <p class="text-sm text-slate-500 mb-4">Şu anda hazırlanan veya servis edilen sipariş bulunmuyor.</p>
+            <a href="/Garson/Index" class="btn bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white border-0 btn-sm gap-2">
+                <i class="fa-solid fa-plus"></i>
+                Yeni Sipariş Oluştur
+            </a>
+        </div>
+    </div>
+}
+else
+{
+    <!-- Özet Kartları -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div class="bg-white rounded-lg shadow border border-slate-200 p-4">
+            <div class="flex items-center gap-3">
+                <div class="bg-amber-100 p-2 rounded-lg">
+                    <i class="fa-solid fa-fire-burner text-amber-600 text-lg"></i>
+                </div>
+                <div>
+                    <p class="text-xs text-slate-500 font-semibold">Hazırlanıyor</p>
+                    <p class="text-2xl font-bold text-slate-800">@Model.Count(s => s.SiparisDurumId == 1)</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow border border-slate-200 p-4">
+            <div class="flex items-center gap-3">
+                <div class="bg-blue-100 p-2 rounded-lg">
+                    <i class="fa-solid fa-utensils text-blue-600 text-lg"></i>
+                </div>
+                <div>
+                    <p class="text-xs text-slate-500 font-semibold">Servis Edildi</p>
+                    <p class="text-2xl font-bold text-slate-800">@Model.Count(s => s.SiparisDurumId == 2)</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow border border-slate-200 p-4">
+            <div class="flex items-center gap-3">
+                <div class="bg-emerald-100 p-2 rounded-lg">
+                    <i class="fa-solid fa-utensils text-emerald-600 text-lg"></i>
+                </div>
+                <div>
+                    <p class="text-xs text-slate-500 font-semibold">Toplam</p>
+                    <p class="text-2xl font-bold text-slate-800">@Model.Count</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sipariş Listesi -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4">
+        @foreach (var siparis in Model)
+        {
+            var durumClass = siparis.SiparisDurumId switch
+            {
+                1 => "border-amber-200 bg-amber-50", // Hazırlanıyor
+                2 => "border-blue-200 bg-blue-50", // Servis Edildi
+                _ => "border-slate-200 bg-slate-50"
+            };
+            
+            var durumBadgeClass = siparis.SiparisDurumId switch
+            {
+                1 => "badge-warning", // Hazırlanıyor
+                2 => "badge-info", // Servis Edildi
+                _ => "badge-ghost"
+            };
+            
+            var durumIcon = siparis.SiparisDurumId switch
+            {
+                1 => "fa-fire-burner", // Hazırlanıyor
+                2 => "fa-utensils", // Servis Edildi
+                _ => "fa-question"
+            };
+            
+            decimal toplam = siparis.SiparisUrun.Sum(su => su.Adet * su.BirimFiyat);
+            
+            <div class="bg-white rounded-lg shadow border-2 @durumClass overflow-hidden hover:shadow-lg transition-all">
+                <!-- Header -->
+                <div class="p-4 border-b border-slate-200">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <div class="bg-gradient-to-br from-blue-500 to-indigo-600 p-2 rounded-lg text-white">
+                                <i class="fa-solid fa-chair text-base"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-bold text-slate-800">@siparis.Masa.MasaAdi</h3>
+                                <p class="text-xs text-slate-500">#@siparis.SiparisId</p>
+                            </div>
+                        </div>
+                        <span class="badge @durumBadgeClass gap-1 text-xs font-bold">
+                            <i class="fa-solid @durumIcon"></i>
+                            @siparis.SiparisDurum.DurumAdi
+                        </span>
+                    </div>
+                </div>
+                
+                <!-- İçerik -->
+                <div class="p-4">
+                    <!-- Bilgiler -->
+                    <div class="grid grid-cols-2 gap-3 mb-3">
+                        <div class="flex items-center gap-2 text-xs text-slate-600">
+                            <i class="fa-solid fa-user text-blue-500"></i>
+                            <span>@(siparis.Garson?.AdSoyad ?? "Atanmadı")</span>
+                        </div>
+                        <div class="flex items-center gap-2 text-xs text-slate-600">
+                            <i class="fa-solid fa-clock text-blue-500"></i>
+                            <span>@siparis.OlusturmaTarihi.ToString("HH:mm")</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Ürünler -->
+                    <div class="space-y-2 mb-3">
+                        @foreach (var su in siparis.SiparisUrun)
+                        {
+                            <div class="flex items-center justify-between p-2 bg-slate-50 rounded text-xs">
+                                <div class="flex-1">
+                                    <span class="font-semibold text-slate-800">@su.Urun.UrunAdi</span>
+                                    <span class="text-slate-500 ml-2">x @su.Adet</span>
+                                </div>
+                                <span class="font-bold text-slate-800">₺@((su.Adet * su.BirimFiyat).ToString("N2"))</span>
+                            </div>
+                        }
+                    </div>
+                    
+                    <!-- Notlar -->
+                    @if (!string.IsNullOrEmpty(siparis.Notlar))
+                    {
+                        <div class="bg-blue-50 border border-blue-200 rounded p-2 mb-3">
+                            <i class="fa-solid fa-note-sticky text-blue-600 text-sm"></i>
+                            <span class="text-sm text-slate-800 ml-2">@siparis.Notlar</span>
+                        </div>
+                    }
+                    
+                    <!-- Toplam ve Aksiyon -->
+                    <div class="flex justify-between items-center pt-3 border-t border-slate-200">
+                        <div>
+                            <span class="text-xs text-slate-500">TOPLAM:</span>
+                            <span class="text-lg font-bold text-emerald-600 ml-2">₺@toplam.ToString("N2")</span>
+                        </div>
+                        <a href="/Garson/Siparis?masaId=@siparis.MasaId" class="btn bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white border-0 btn-sm gap-2">
+                            <i class="fa-solid fa-eye"></i>
+                            Detay
+                        </a>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+

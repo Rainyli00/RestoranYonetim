@@ -1,0 +1,343 @@
+﻿@model List<RestoranYonetim.Models.Masa>
+
+@{
+    ViewData["Title"] = "Masa Yönetimi";
+    Layout = "~/Views/Shared/_LayoutGarson.cshtml";
+}
+
+<!-- Header -->
+<div class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8 gap-4">
+    <div>
+        <div class="flex items-center gap-4 mb-2">
+            <div class="text-3xl font-extrabold text-slate-800">Hoş geldiniz, @ViewBag.AdSoyad!</div>
+        </div>
+        <div class="flex items-center gap-3 text-slate-500">
+            <i class="fa-regular fa-calendar text-blue-500"></i>
+            <span id="canliTarih" class="font-medium"></span>
+            <span class="text-slate-300">|</span>
+            <i class="fa-regular fa-clock text-blue-500"></i>
+            <span id="canliSaat" class="font-bold text-lg text-slate-700"></span>
+        </div>
+    </div>
+    
+    <div class="flex flex-wrap gap-3">
+        <a href="/Garson/AktifSiparisler" class="btn bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white border-0 btn-sm gap-2 shadow-lg hover:shadow-xl transition-all">
+            <i class="fa-solid fa-list-check"></i>
+            Aktif Siparişler
+        </a>
+        @if (ViewBag.TumunuGoster == true)
+        {
+            <a href="/Garson/Index?tumunuGoster=false" class="btn btn-warning btn-sm gap-2 shadow-lg hover:shadow-xl transition-all">
+                <i class="fa-solid fa-filter"></i>
+                Sadece Dolu Masalar
+            </a>
+        }
+        else
+        {
+            <a href="/Garson/Index?tumunuGoster=true" class="btn bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white border-0 btn-sm gap-2 shadow-lg hover:shadow-xl transition-all">
+                <i class="fa-solid fa-th"></i>
+                Tüm Masaları Göster
+            </a>
+        }
+    </div>
+</div>
+
+<!-- Garson Çağrı Bildirimleri -->
+@if (!string.IsNullOrEmpty(ViewBag.Bildirimler))
+{
+    var bildirimler = ((string)ViewBag.Bildirimler).Split(';');
+    <div class="mb-8">
+        <!-- Başlık -->
+        <div class="flex items-center gap-3 mb-4">
+            <div class="relative">
+                <div class="w-12 h-12 bg-gradient-to-br from-red-500 to-orange-500 rounded-xl flex items-center justify-center shadow-lg animate-pulse">
+                    <i class="fa-solid fa-bell text-white text-xl"></i>
+                </div>
+                <span class="absolute -top-2 -right-2 w-6 h-6 bg-red-600 text-white text-xs font-bold rounded-full flex items-center justify-center shadow-md">
+                    @bildirimler.Length
+                </span>
+            </div>
+            <div>
+                <h2 class="text-xl font-bold text-slate-800">Müşteri Çağrıları</h2>
+                <p class="text-sm text-slate-500">Bekleyen çağrılarınız var</p>
+            </div>
+        </div>
+        
+        <!-- Bildirim Kartları -->
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            @foreach (var bildirim in bildirimler)
+            {
+                var parts = bildirim.Split('|');
+                if (parts.Length == 4)
+                {
+                    <a href="/Garson/Siparis?masaId=@parts[0]" class="group relative overflow-hidden bg-gradient-to-br from-orange-50 to-red-50 border-2 border-orange-200 rounded-2xl p-5 hover:shadow-xl hover:border-orange-400 hover:-translate-y-1 transition-all duration-300 block">
+                        <!-- Dekoratif Arka Plan -->
+                        <div class="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-orange-200/30 to-red-200/30 rounded-full -translate-y-8 translate-x-8"></div>
+                        <div class="absolute bottom-0 left-0 w-16 h-16 bg-gradient-to-tr from-orange-200/20 to-red-200/20 rounded-full translate-y-6 -translate-x-6"></div>
+                        
+                        <div class="relative">
+                            <!-- Üst Kısım -->
+                            <div class="flex items-start justify-between mb-4">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-12 h-12 bg-gradient-to-br from-orange-500 to-red-500 rounded-xl flex items-center justify-center shadow-md">
+                                        <i class="fa-solid fa-utensils text-white text-lg"></i>
+                                    </div>
+                                    <div>
+                                        <span class="text-lg font-bold text-slate-800 block">@parts[1]</span>
+                                        <span class="text-xs text-slate-500">Garson çağırıyor</span>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-1 bg-red-100 text-red-700 px-3 py-1.5 rounded-full text-xs font-semibold">
+                                    <i class="fa-solid fa-clock"></i>
+                                    <span>@parts[2]</span>
+                                </div>
+                            </div>
+                            
+                            <!-- Not Kısmı -->
+                            @if (parts[3] != "Yok")
+                            {
+                                <div class="bg-white/70 backdrop-blur-sm rounded-xl p-3 mb-4 border border-orange-100">
+                                    <div class="flex items-start gap-2">
+                                        <i class="fa-solid fa-comment-dots text-orange-500 mt-0.5"></i>
+                                        <p class="text-sm text-slate-700 italic">"@parts[3]"</p>
+                                    </div>
+                                </div>
+                            }
+                            
+                            <!-- Buton -->
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-2 text-xs text-slate-500">
+                                    <i class="fa-solid fa-hand-point-up"></i>
+                                    <span>Tıkla ve bildirimi kapat</span>
+                                </div>
+                                <div class="flex items-center gap-2 bg-gradient-to-r from-orange-500 to-red-500 text-white px-4 py-2 rounded-xl text-sm font-semibold group-hover:shadow-lg transition-all">
+                                    <span>Masaya Git</span>
+                                    <i class="fa-solid fa-arrow-right group-hover:translate-x-1 transition-transform"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </a>
+                }
+            }
+        </div>
+    </div>
+}
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success shadow-lg mb-6 animate-fade-in">
+        <i class="fa-solid fa-circle-check text-xl"></i>
+        <span class="font-semibold">@TempData["Success"]</span>
+    </div>
+}
+
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-error shadow-lg mb-6 animate-fade-in">
+        <i class="fa-solid fa-circle-xmark text-xl"></i>
+        <span class="font-semibold">@TempData["Error"]</span>
+    </div>
+}
+
+@if (TempData["Warning"] != null)
+{
+    <div class="alert alert-warning shadow-lg mb-6 animate-fade-in">
+        <i class="fa-solid fa-triangle-exclamation text-xl"></i>
+        <span class="font-semibold">@TempData["Warning"]</span>
+    </div>
+}
+
+@if (!Model.Any())
+{
+    <div class="bg-white rounded-xl shadow-lg border border-slate-200 p-12 text-center">
+        <div class="max-w-md mx-auto">
+            <div class="bg-slate-100 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6">
+                <i class="fa-solid fa-chair text-slate-400 text-5xl"></i>
+            </div>
+            <h3 class="text-2xl font-bold text-slate-800 mb-2">Masa Bulunamadı</h3>
+            <p class="text-slate-500 mb-6">
+                @if (ViewBag.TumunuGoster == false)
+                {
+                    <text>Şu anda dolu masa bulunmuyor. Tüm masaları görmek için yukarıdaki butona tıklayın.</text>
+                }
+                else
+                {
+                    <text>Sistemde henüz masa tanımlanmamış.</text>
+                }
+            </p>
+        </div>
+    </div>
+}
+else
+{
+    <!-- Masa Kartları -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        @foreach (var masa in Model)
+        {
+            var aktifSiparis = masa.Siparis.FirstOrDefault();
+            var durumClass = masa.DurumId switch
+            {
+                1 => "border-emerald-300 bg-emerald-50", // Boş
+                2 => "border-rose-300 bg-rose-50", // Dolu
+                3 => "border-amber-300 bg-amber-50", // Rezerve
+                _ => "border-slate-300 bg-slate-50"
+            };
+            
+            var durumBadgeClass = masa.DurumId switch
+            {
+                1 => "badge-success",
+                2 => "badge-error",
+                3 => "badge-warning",
+                _ => "badge-ghost"
+            };
+            
+            var durumIcon = masa.DurumId switch
+            {
+                1 => "fa-circle-check",
+                2 => "fa-utensils",
+                3 => "fa-clock",
+                _ => "fa-question"
+            };
+
+            <a href="@(masa.DurumId == 1 || masa.DurumId == 2 || masa.DurumId == 3 ? "/Garson/Siparis?masaId=" + masa.MasaId : "#")" 
+               class="block @(masa.DurumId == 1 || masa.DurumId == 2 || masa.DurumId == 3 ? "hover:shadow-xl transform hover:-translate-y-1" : "opacity-60 cursor-not-allowed") transition-all duration-300">
+                <div class="bg-white rounded-xl shadow-lg border-2 @durumClass overflow-hidden h-full">
+                    <!-- Header -->
+                    <div class="p-6 border-b border-slate-200">
+                        <div class="flex items-center justify-between mb-3">
+                            <h3 class="text-2xl font-bold text-slate-800">@masa.MasaAdi</h3>
+                            <span class="badge @durumBadgeClass gap-1 px-3 py-3 text-xs font-bold">
+                                <i class="fa-solid @durumIcon"></i>
+                                @masa.Durum.DurumAdi
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <!-- İçerik -->
+                    <div class="p-6">
+                        @if (aktifSiparis != null)
+                        {
+                            <div class="space-y-3">
+                                <div class="flex items-center gap-2 text-sm text-slate-600">
+                                    <i class="fa-solid fa-clock text-blue-500"></i>
+                                    <span class="font-semibold">Sipariş Zamanı:</span>
+                                    <span>@aktifSiparis.OlusturmaTarihi.ToString("HH:mm")</span>
+                                </div>
+                                <div class="flex items-center gap-2 text-sm text-slate-600">
+                                    <i class="fa-solid fa-info-circle text-blue-500"></i>
+                                    <span class="font-semibold">Sipariş Durumu:</span>
+                                    <span class="badge @(aktifSiparis.SiparisDurumId == 1 ? "badge-warning" : "badge-info") badge-sm">
+                                        <span class="font-bold text-slate-900">@(aktifSiparis.SiparisDurum?.DurumAdi ?? "Bilinmiyor")</span>
+                                    </span>
+                                </div>
+                                <div class="flex items-center gap-2 text-sm text-slate-600">
+                                    <i class="fa-solid fa-shopping-bag text-blue-500"></i>
+                                    <span class="font-semibold">Ürün Sayısı:</span>
+                                    <span>@aktifSiparis.SiparisUrun.Sum(su => su.Adet) adet</span>
+                                </div>
+                                <div class="flex items-center gap-2 text-sm text-slate-600">
+                                    <i class="fa-solid fa-turkish-lira-sign text-blue-500"></i>
+                                    <span class="font-semibold">Tutar:</span>
+                                    <span class="text-lg font-bold text-slate-800">
+                                        ₺@aktifSiparis.SiparisUrun.Sum(su => su.Adet * su.BirimFiyat).ToString("N2")
+                                    </span>
+                                </div>
+                                <div class="pt-3 border-t border-slate-200">
+                                    <span class="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                                        <i class="fa-solid fa-info-circle mr-1"></i>
+                                        Tıklayarak detayları görün
+                                    </span>
+                                </div>
+                            </div>
+                        }
+                        else if (masa.DurumId == 1)
+                        {
+                            <div class="text-center py-4">
+                                <div class="bg-emerald-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3">
+                                    <i class="fa-solid fa-plus text-emerald-600 text-2xl"></i>
+                                </div>
+                                <p class="text-sm font-semibold text-slate-600">Yeni Sipariş Oluştur</p>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="text-center py-4">
+                                <div class="bg-amber-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3">
+                                    <i class="fa-solid fa-lock text-amber-600 text-2xl"></i>
+                                </div>
+                                <p class="text-sm font-semibold text-slate-600">Rezerve Edilmiş</p>
+                                <p class="text-xs text-slate-500 mt-1">Müsait değil</p>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </a>
+        }
+    </div>
+}
+
+<style>
+    @@keyframes fade-in {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .animate-fade-in {
+        animation: fade-in 0.3s ease-out;
+    }
+</style>
+
+<script>
+    // Canlı Tarih ve Saat Gösterimi
+    function tarihSaatGuncelle() {
+        const simdi = new Date();
+        
+        // Türkçe gün ve ay isimleri
+        const gunler = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi'];
+        const aylar = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
+        
+        const gun = gunler[simdi.getDay()];
+        const tarih = simdi.getDate();
+        const ay = aylar[simdi.getMonth()];
+        const yil = simdi.getFullYear();
+        
+        const saat = simdi.getHours().toString().padStart(2, '0');
+        const dakika = simdi.getMinutes().toString().padStart(2, '0');
+        const saniye = simdi.getSeconds().toString().padStart(2, '0');
+        
+        document.getElementById('canliTarih').textContent = `${gun}, ${tarih} ${ay} ${yil}`;
+        document.getElementById('canliSaat').textContent = `${saat}:${dakika}:${saniye}`;
+    }
+    
+    // Sayfa yüklendiğinde hemen çalıştır
+    tarihSaatGuncelle();
+    // Her saniye güncelle
+    setInterval(tarihSaatGuncelle, 1000);
+
+    // Her 5 saniyede bir yeni bildirim kontrolü yap (AJAX ile)
+    let lastBildirimSayisi = @(!string.IsNullOrEmpty(ViewBag.Bildirimler) ? ((string)ViewBag.Bildirimler).Split(';').Length : 0);
+    
+    setInterval(async function() {
+        try {
+            const response = await fetch('/Garson/BildirimSayisi');
+            const data = await response.json();
+            // Eğer bildirim sayısı arttıysa, sayfayı yenile
+            if (data.sayi > lastBildirimSayisi) {
+                lastBildirimSayisi = data.sayi;
+                window.location.reload();
+            }
+        } catch (error) {
+            console.error('Bildirim kontrolü hatası:', error);
+        }
+    }, 5000); // 5 saniye
+
+</script>
+
+
+

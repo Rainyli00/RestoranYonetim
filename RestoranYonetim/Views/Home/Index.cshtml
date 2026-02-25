@@ -1,0 +1,422 @@
+﻿@model IEnumerable<RestoranYonetim.Models.Kategori>
+
+@{
+    ViewData["Title"] = "Menü";
+    Layout = "~/Views/Shared/_LayoutMenu.cshtml";
+}
+
+@if (TempData["Success"] != null)
+{
+    <div class="toast toast-top toast-center z-50">
+        <div class="alert alert-success shadow-lg">
+            <div>
+                <i class="fa-solid fa-circle-check text-xl"></i>
+                <span>@TempData["Success"]</span>
+            </div>
+        </div>
+    </div>
+}
+
+@if (TempData["Error"] != null)
+{
+    <div class="toast toast-top toast-center z-50">
+        <div class="alert alert-error shadow-lg">
+            <div>
+                <i class="fa-solid fa-circle-xmark text-xl"></i>
+                <span>@TempData["Error"]</span>
+            </div>
+        </div>
+    </div>
+}
+
+<div class="hero min-h-[300px] relative" style="background-image: url('/img/restoranfoto.jpg');">
+    <div class="hero-overlay bg-black bg-opacity-60"></div>
+    <div class="hero-content text-center text-neutral-content relative z-10">
+        <div class="max-w-md">
+            <h1 class="mb-3 text-5xl font-bold text-white drop-shadow-lg tracking-tight">Hoş Geldiniz</h1>
+            <p class="mb-5 text-gray-200 font-light text-lg">Menünüzü inceleyin, beğendiğiniz ürünleri değerlendirin.</p>
+        </div>
+    </div>
+</div>
+
+<div class="sticky top-[64px] z-40 bg-base-100/80 backdrop-blur-md border-b border-base-200 shadow-sm">
+    <div class="container mx-auto px-4 py-3">
+        <div class="flex gap-3 overflow-x-auto no-scrollbar pb-1 snap-x">
+            @foreach (var kat in Model)
+            {
+                if (kat.Urun.Any())
+                {
+                    <a href="#kat-@kat.KategoriId"
+                       class="btn btn-sm btn-outline border-gray-300 hover:btn-primary hover:border-primary rounded-full whitespace-nowrap snap-center">
+                        @kat.KategoriAdi
+                    </a>
+                }
+            }
+        </div>
+    </div>
+</div>
+
+<div class="container mx-auto px-4 py-8 max-w-5xl">
+
+    @foreach (var kategori in Model)
+    {
+        if (kategori.Urun.Any())
+        {
+            <div id="kat-@kategori.KategoriId" class="scroll-mt-32 mb-8">
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="h-8 w-1 bg-primary rounded-full"></div>
+                    <h2 class="text-2xl font-bold text-base-content">@kategori.KategoriAdi</h2>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                    @foreach (var urun in kategori.Urun)
+                    {
+                        var stokYok = urun.Stok <= 0;
+                        var cardClass = stokYok ? "opacity-60 grayscale pointer-events-none" : "hover:shadow-xl hover:-translate-y-1 cursor-pointer urun-card";
+
+                        <div class="card card-side bg-base-100 shadow-md border border-base-200 transition-all duration-300 h-36 overflow-hidden group @cardClass" 
+                             data-urun-id="@urun.UrunId"
+                             data-urun-adi="@urun.UrunAdi"
+                             data-resim-url="@urun.ResimUrl">
+
+                            <figure class="w-1/3 h-full relative bg-base-200">
+                                @if (!string.IsNullOrEmpty(urun.ResimUrl))
+                                {
+                                    <img src="@urun.ResimUrl" alt="@urun.UrunAdi" class="h-full w-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                                }
+                                else
+                                {
+                                    <div class="h-full w-full flex items-center justify-center text-4xl">🍽️</div>
+                                }
+
+                                @if (stokYok)
+                                {
+                                    <div class="absolute inset-0 bg-black/60 flex items-center justify-center">
+                                        <span class="badge badge-error font-bold text-white rotate-12 scale-125">TÜKENDİ</span>
+                                    </div>
+                                }
+                            </figure>
+
+                            <div class="card-body w-2/3 p-4 justify-between">
+                                <div>
+                                    <h3 class="card-title text-lg font-bold leading-tight mb-1">@urun.UrunAdi</h3>
+
+                                    @if (!stokYok && urun.Stok < 5)
+                                    {
+                                        <span class="text-xs text-warning font-semibold flex items-center gap-1">
+                                            <span class="w-1.5 h-1.5 bg-warning rounded-full animate-pulse"></span>
+                                            Son @urun.Stok adet
+                                        </span>
+                                    }
+                                </div>
+
+                                <div class="flex justify-between items-end">
+                                    <div class="flex flex-col">
+                                        <span class="text-xs text-base-content/50 font-medium">Fiyat</span>
+                                        <span class="text-xl font-black text-blue-600">₺@Convert.ToInt32(urun.Fiyat)</span>
+                                    </div>
+
+                                    @if (!stokYok)
+                                    {
+                                        <div class="text-xs text-blue-600 font-semibold flex items-center gap-1">
+                                            <i class="fa-solid fa-comment-dots"></i>
+                                            Değerlendir
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    }
+
+    <div class="h-20"></div>
+
+</div>
+
+<div class="fixed bottom-6 left-6 z-50">
+    <button onclick="document.getElementById('garsonCagirModal').showModal()" 
+            class="btn btn-circle btn-lg bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white border-0 shadow-2xl hover:scale-110 transition-transform">
+        <i class="fa-solid fa-bell text-2xl"></i>
+    </button>
+    <div class="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full animate-ping"></div>
+</div>
+
+<div class="fixed bottom-24 left-6 z-50">
+    <button onclick="document.getElementById('genelGeriBildirimModal').showModal()" 
+            class="btn btn-circle btn-lg bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white border-0 shadow-2xl hover:scale-110 transition-transform">
+        <i class="fa-solid fa-comment-dots text-2xl"></i>
+    </button>
+    <div class="absolute -top-1 -right-1 w-4 h-4 bg-blue-500 rounded-full animate-ping"></div>
+</div>
+
+<!-- Garson Çağır Modal -->
+<dialog id="garsonCagirModal" class="modal">
+    <div class="modal-box max-w-md p-0 overflow-hidden">
+        <form method="dialog">
+            <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2 z-10 bg-white/80 hover:bg-white">✕</button>
+        </form>
+
+        <!-- Başlık (mavi tema) -->
+        <div class="bg-gradient-to-r from-blue-500 to-indigo-600 text-white p-6">
+            <h3 class="font-bold text-lg mb-0 flex items-center gap-2">
+                <span class="text-2xl">🔔</span>
+                Garson Çağır
+            </h3>
+        </div>
+
+        <form id="garsonCagirForm" method="post" action="/Home/GarsonCagir" class="p-6">
+            <div class="form-control mb-4">
+                <label class="label">
+                    <span class="label-text font-semibold">Masa Numaranız</span>
+                </label>
+                <select name="masaId" class="select select-bordered border-2 border-blue-200 focus:border-blue-500" required>
+                    <option value="" disabled selected>Masanızı seçin...</option>
+                    @if (ViewBag.Masalar != null)
+                    {
+                        @foreach (var masa in (List<RestoranYonetim.Models.Masa>)ViewBag.Masalar)
+                        {
+                            <option value="@masa.MasaId">@masa.MasaAdi</option>
+                        }
+                    }
+                </select>
+            </div>
+
+            <div class="form-control mb-4">
+                <label class="label">
+                    <span class="label-text font-semibold">Not (İsteğe bağlı)</span>
+                </label>
+                <textarea name="not" class="textarea textarea-bordered border-2 border-blue-200 focus:border-blue-500 h-20" placeholder="Özel bir talebiniz var mı?"></textarea>
+            </div>
+
+            <div class="modal-action">
+                <button type="button" class="btn btn-ghost" onclick="document.getElementById('garsonCagirModal').close()">İptal</button>
+                <button type="submit" class="btn bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white border-0">
+                    <i class="fa-solid fa-bell"></i>
+                    Garson Çağır
+                </button>
+            </div>
+        </form>
+    </div>
+    <form method="dialog" class="modal-backdrop">
+        <button>close</button>
+    </form>
+</dialog>
+
+<!-- Genel Geri Bildirim Modal -->
+<dialog id="genelGeriBildirimModal" class="modal">
+    <div class="modal-box max-w-lg p-0 overflow-hidden">
+        <form method="dialog">
+            <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2 z-10 bg-white/80 hover:bg-white">✕</button>
+        </form>
+        
+        <!-- Başlık -->
+        <div class="bg-gradient-to-r from-blue-500 to-indigo-600 text-white p-6">
+            <h3 class="font-black text-2xl text-center">
+                <i class="fa-solid fa-comment-dots mr-2"></i>
+                Genel Geri Bildirim
+            </h3>
+            <p class="text-center text-blue-100 mt-2">Restorantımız hakkında düşüncelerinizi paylaşın</p>
+        </div>
+
+        <!-- Form Section -->
+        <form id="genelGeriBildirimForm" method="post" action="/Home/GeriBildirimGonder" class="p-6">
+            
+            <div class="form-control mb-4">
+                <label class="label py-1">
+                    <span class="label-text font-bold text-gray-700">Geri Bildirim Türü</span>
+                </label>
+                <select name="turId" class="select select-bordered border-2 border-blue-200 focus:border-blue-500" required>
+                  
+                    @if (ViewBag.GeriBildirimTurleri != null)
+                    {
+                        @foreach (var tur in (List<RestoranYonetim.Models.GeribildirimTuru>)ViewBag.GeriBildirimTurleri)
+                        {
+                            <option value="@tur.TurId">@tur.TurAdi</option>
+                        }
+                    }
+                </select>
+            </div>
+
+            <div class="form-control mb-3">
+                <label class="label py-1">
+                    <span class="label-text font-bold text-gray-700">Puanınız</span>
+                </label>
+                <div class="rating rating-lg gap-2 justify-center py-2">
+                    <input type="radio" name="puan" value="1" class="mask mask-star-2 bg-yellow-400" />
+                    <input type="radio" name="puan" value="2" class="mask mask-star-2 bg-yellow-400" />
+                    <input type="radio" name="puan" value="3" class="mask mask-star-2 bg-yellow-400" />
+                    <input type="radio" name="puan" value="4" class="mask mask-star-2 bg-yellow-400" />
+                    <input type="radio" name="puan" value="5" class="mask mask-star-2 bg-yellow-400" checked />
+                </div>
+            </div>
+
+            <div class="form-control mb-4">
+                <label class="label py-1">
+                    <span class="label-text font-bold text-gray-700">Yorumunuz</span>
+                </label>
+                <textarea name="yorum" class="textarea textarea-bordered border-2 border-blue-200 focus:border-blue-500 h-32" 
+                          placeholder="Restorantımız hakkında ne düşünüyorsunuz? Önerileriniz, şikayetleriniz..." required maxlength="1000"></textarea>
+            </div>
+
+            <div class="flex gap-3">
+                <button type="button" class="btn flex-1 btn-ghost" onclick="closeGenelGeriBildirimModal()">
+                    İptal
+                </button>
+                <button type="submit" class="btn flex-1 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white border-0">
+                    <i class="fa-solid fa-paper-plane"></i>
+                    Gönder
+                </button>
+            </div>
+        </form>
+    </div>
+    <form method="dialog" class="modal-backdrop">
+        <button>close</button>
+    </form>
+</dialog>
+
+<!-- Modern Feedback Modal -->
+<dialog id="feedbackModal" class="modal">
+    <div class="modal-box max-w-lg p-0 overflow-hidden">
+        <form method="dialog">
+            <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2 z-10 bg-white/80 hover:bg-white">✕</button>
+        </form>
+        
+        <!-- Ürün Resmi - Üst Kısım -->
+        <div class="relative h-52 bg-gradient-to-br from-blue-100 to-indigo-200 overflow-hidden">
+            <img id="modalUrunResim" src="" alt="" class="w-full h-full object-cover hidden" />
+            <div class="w-full h-full flex items-center justify-center text-8xl hidden" id="modalUrunResimPlaceholder">🍽️</div>
+            
+            <!-- Overlay with Product Name -->
+            <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent flex items-end">
+                <div class="p-6 w-full">
+                    <h3 class="font-black text-2xl text-white drop-shadow-lg" id="modalUrunAdi"></h3>
+                    <p class="text-sm text-white/90 mt-1 flex items-center gap-2">
+                        <i class="fa-solid fa-star text-yellow-400"></i>
+                        Ürün değerlendirmesi
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Form Section -->
+        <form id="feedbackForm" method="post" action="/Home/GeriBildirimGonder" class="p-5">
+            <input type="hidden" id="feedbackUrunId" name="urunId" />
+            <input type="hidden" name="turId" value="1" />
+            
+            <div class="form-control mb-3">
+                <label class="label py-1">
+                    <span class="label-text font-bold text-gray-700">Puanınız</span>
+                </label>
+                <div class="rating rating-lg gap-2 justify-center py-2">
+                    <input type="radio" name="puan" value="1" class="mask mask-star-2 bg-yellow-400" />
+                    <input type="radio" name="puan" value="2" class="mask mask-star-2 bg-yellow-400" />
+                    <input type="radio" name="puan" value="3" class="mask mask-star-2 bg-yellow-400" />
+                    <input type="radio" name="puan" value="4" class="mask mask-star-2 bg-yellow-400" />
+                    <input type="radio" name="puan" value="5" class="mask mask-star-2 bg-yellow-400" checked />
+                </div>
+            </div>
+
+            <div class="form-control mb-4">
+                <label class="label py-1">
+                    <span class="label-text font-bold text-gray-700">Yorumunuz</span>
+                </label>
+                <textarea name="yorum" class="textarea textarea-bordered border-2 border-blue-200 focus:border-blue-500 h-24" 
+                          placeholder="Bu ürün hakkında ne düşünüyorsunuz?" required maxlength="500"></textarea>
+            </div>
+
+            <div class="flex gap-3">
+                <button type="button" class="btn flex-1 btn-ghost" onclick="closeFeedbackModal()">
+                    İptal
+                </button>
+                <button type="submit" class="btn flex-1 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white border-0">
+                    <i class="fa-solid fa-paper-plane"></i>
+                    Gönder
+                </button>
+            </div>
+        </form>
+    </div>
+    <form method="dialog" class="modal-backdrop">
+        <button>close</button>
+    </form>
+</dialog>
+
+<!-- ==================== JAVASCRIPT ==================== -->
+<script>
+    // ===== 1. GARSON ÇAĞIR - FORM SUBMIT =====
+    document.getElementById('garsonCagirForm')?.addEventListener('submit', function() {
+        setTimeout(() => {
+            document.getElementById('garsonCagirModal').close();
+        }, 100);
+    });
+    
+    // ===== 2. GENEL GERİ BİLDİRİM - FORM SUBMIT =====
+    document.getElementById('genelGeriBildirimForm')?.addEventListener('submit', function() {
+        setTimeout(() => {
+            document.getElementById('genelGeriBildirimModal').close();
+        }, 100);
+    });
+    
+    // ===== 2. TOAST BİLDİRİMLERİ - OTOMATİK KAYBOLMA =====
+    setTimeout(() => {
+        const toasts = document.querySelectorAll('.toast');
+        toasts.forEach(toast => {
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateY(-20px)';
+            setTimeout(() => toast.remove(), 300);
+        });
+    }, 5000);
+    
+    // ===== 3. GERİ BİLDİRİM - ÜRÜN KARTLARINA CLICK EVENT =====
+    document.addEventListener('DOMContentLoaded', function() {
+        const urunCards = document.querySelectorAll('.urun-card');
+        
+        urunCards.forEach(card => {
+            card.addEventListener('click', function() {
+                const urunId = this.getAttribute('data-urun-id');
+                const urunAdi = this.getAttribute('data-urun-adi');
+                const resimUrl = this.getAttribute('data-resim-url');
+                
+                openFeedbackModal(urunId, urunAdi, resimUrl);
+            });
+        });
+    });
+    
+    // ===== 4. GERİ BİLDİRİM MODAL - AÇMA FONKSİYONU =====
+    function openFeedbackModal(urunId, urunAdi, resimUrl) {
+        document.getElementById('feedbackUrunId').value = urunId;
+        document.getElementById('modalUrunAdi').textContent = urunAdi;
+        
+        const resimElement = document.getElementById('modalUrunResim');
+        const placeholderElement = document.getElementById('modalUrunResimPlaceholder');
+        
+        if (resimUrl && resimUrl !== '' && resimUrl !== 'null') {
+            resimElement.src = resimUrl;
+            resimElement.classList.remove('hidden');
+            placeholderElement.classList.add('hidden');
+        } else {
+            resimElement.classList.add('hidden');
+            placeholderElement.classList.remove('hidden');
+        }
+        
+        // Formu sıfırla
+        document.getElementById('feedbackForm').reset();
+        const star5 = document.querySelector('input[name="puan"][value="5"]');
+        if (star5) star5.checked = true;
+        
+        document.getElementById('feedbackModal').showModal();
+    }
+    
+    // ===== 5. GERİ BİLDİRİM MODAL - KAPAMA FONKSİYONU =====
+    function closeFeedbackModal() {
+        document.getElementById('feedbackModal').close();
+    }
+    
+    // ===== 6. GENEL GERİ BILDİRİM MODAL - KAPAMA FONKSİYONU =====
+    function closeGenelGeriBildirimModal() {
+        document.getElementById('genelGeriBildirimModal').close();
+    }
+</script>

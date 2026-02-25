@@ -1,0 +1,441 @@
+﻿@model List<RestoranYonetim.Models.Gider>
+
+@{
+    ViewData["Title"] = "Gider Yönetimi";
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+
+    var baslangic = ViewBag.Baslangic as DateTime?;
+    var bitis = ViewBag.Bitis as DateTime?;
+    var kategoriler = ViewBag.Kategoriler as List<RestoranYonetim.Models.GiderKategori>;
+    var aktifKat = ViewBag.AktifKat as int?;
+
+    // İstatistikler
+    var toplamGider = Model.Sum(x => x.Tutar);
+    var giderAdeti = Model.Count;
+}
+
+<!-- Toast Bildirimleri (Sağ Üstte) -->
+@if (TempData["Success"] != null)
+{
+    <div class="toast toast-top toast-end z-50 transition-all duration-300" id="successToast">
+        <div class="alert alert-success text-white shadow-lg">
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-circle-check text-xl"></i>
+                <span class="font-medium">@TempData["Success"]</span>
+            </div>
+        </div>
+    </div>
+}
+
+@if (TempData["Error"] != null)
+{
+    <div class="toast toast-top toast-end z-50 transition-all duration-300" id="errorToast">
+        <div class="alert alert-error text-white shadow-lg">
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-circle-xmark text-xl"></i>
+                <span class="font-medium">@TempData["Error"]</span>
+            </div>
+        </div>
+    </div>
+}
+
+<div class="flex justify-between items-center mb-6">
+    <div>
+        
+    </div>
+    <button class="btn bg-blue-600 hover:bg-blue-700 text-white border-0 gap-2 shadow-lg" onclick="document.getElementById('modal_gider_ekle').showModal()">
+        <i class="fa-solid fa-plus"></i> Yeni Gider
+    </button>
+</div>
+
+<!-- İstatistik Kartları -->
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+    <div class="stats shadow-sm bg-white border border-slate-200">
+        <div class="stat py-3">
+            <div class="stat-figure text-blue-500">
+                <i class="fa-solid fa-wallet text-2xl"></i>
+            </div>
+            <div class="stat-title text-xs">Toplam Gider</div>
+            <div class="stat-value text-2xl text-blue-600">@toplamGider.ToString("C2")</div>
+        </div>
+    </div>
+    
+    <div class="stats shadow-sm bg-white border border-slate-200">
+        <div class="stat py-3">
+            <div class="stat-figure text-blue-500">
+                <i class="fa-solid fa-receipt text-2xl"></i>
+            </div>
+            <div class="stat-title text-xs">Toplam Kayıt</div>
+            <div class="stat-value text-2xl text-blue-600">@giderAdeti</div>
+        </div>
+    </div>
+</div>
+
+<div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 mb-6">
+    <form method="get" action="/Admin/Giderler" class="flex flex-wrap gap-3 items-end">
+        <!-- Arama -->
+        <div class="form-control flex-1 min-w-[200px]">
+            <label class="label pb-1">
+                <span class="label-text text-xs font-bold text-slate-500">
+                    <i class="fa-solid fa-magnifying-glass mr-1"></i> Ara
+                </span>
+            </label>
+            <input type="text" 
+                   name="arama" 
+                   value="@ViewBag.Arama" 
+                   placeholder="Personel, not, tutar, kategori..." 
+                   class="input input-bordered input-sm bg-slate-50" />
+        </div>
+        
+        <!-- Başlangıç Tarihi -->
+        <div class="form-control">
+            <label class="label pb-1">
+                <span class="label-text text-xs font-bold text-slate-500">
+                    <i class="fa-solid fa-calendar-days mr-1"></i> Başlangıç
+                </span>
+            </label>
+            <input type="date" 
+                   name="baslangic" 
+                   value="@(baslangic.HasValue ? baslangic.Value.ToString("yyyy-MM-dd") : "")" 
+                   class="input input-bordered input-sm bg-slate-50" />
+        </div>
+        
+        <!-- Bitiş Tarihi -->
+        <div class="form-control">
+            <label class="label pb-1">
+                <span class="label-text text-xs font-bold text-slate-500">
+                    <i class="fa-solid fa-calendar-check mr-1"></i> Bitiş
+                </span>
+            </label>
+            <input type="date" 
+                   name="bitis" 
+                   value="@(bitis.HasValue ? bitis.Value.ToString("yyyy-MM-dd") : "")" 
+                   class="input input-bordered input-sm bg-slate-50" />
+        </div>
+        
+        <!-- Kategori -->
+        <div class="form-control w-40">
+            <label class="label pb-1">
+                <span class="label-text text-xs font-bold text-slate-500">
+                    <i class="fa-solid fa-layer-group mr-1"></i> Kategori
+                </span>
+            </label>
+            <select name="katId" class="select select-bordered select-sm bg-slate-50">
+                <option value="">Tümü</option>
+                @if (kategoriler != null)
+                {
+                    foreach (var k in kategoriler)
+                    {
+                        <option value="@k.GiderKategoriId" selected="@(aktifKat == k.GiderKategoriId)">@k.KategoriAdi</option>
+                    }
+                }
+            </select>
+        </div>
+        
+        <!-- Sıralama -->
+        <div class="form-control w-44">
+            <label class="label pb-1">
+                <span class="label-text text-xs font-bold text-slate-500">
+                    <i class="fa-solid fa-arrow-down-wide-short mr-1"></i> Sırala
+                </span>
+            </label>
+            <select name="siralama" class="select select-bordered select-sm bg-slate-50">
+                <option value="tarih" selected="@(ViewBag.Siralama == "tarih")">Tarihe Göre (Yeni→Eski)</option>
+                <option value="tarih-eski" selected="@(ViewBag.Siralama == "tarih-eski")">Tarihe Göre (Eski→Yeni)</option>
+                <option value="tutar-azalan" selected="@(ViewBag.Siralama == "tutar-azalan")">Tutar (Yüksek→Düşük)</option>
+                <option value="tutar-artan" selected="@(ViewBag.Siralama == "tutar-artan")">Tutar (Düşük→Yüksek)</option>
+                <option value="kategori" selected="@(ViewBag.Siralama == "kategori")">Kategoriye Göre</option>
+            </select>
+        </div>
+        
+        <!-- Butonlar -->
+        <div class="flex gap-2 pb-0.5">
+            <button type="submit" class="btn bg-blue-600 hover:bg-blue-700 text-white border-0 btn-sm px-6">
+                <i class="fa-solid fa-filter"></i> Filtrele
+            </button>
+            <a href="/Admin/Giderler" class="btn btn-outline btn-sm px-6 gap-2 hover:bg-slate-100 transition-all">
+                <i class="fa-solid fa-rotate-right"></i> Sıfırla
+            </a>
+        </div>
+    </form>
+</div>
+
+<div class="overflow-x-auto bg-white rounded-2xl shadow-sm border border-slate-200">
+    <table class="table w-full">
+        <thead class="bg-slate-50 text-slate-500 uppercase text-xs">
+            <tr>
+                <th>Kategori</th>
+                <th>Açıklama</th>
+                <th>Tarih</th>
+                <th>Kaydeden</th>
+                <th class="text-right">Tutar</th>
+                <th class="text-right">İşlem</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var g in Model)
+            {
+                <tr class="hover:bg-slate-50 transition-colors">
+                    <td>
+                        <span class="badge badge-ghost font-bold">@g.GiderKategori?.KategoriAdi</span>
+                    </td>
+                    <td class="font-medium text-slate-700">
+                        @if (string.IsNullOrEmpty(g.Aciklama))
+                        {
+                            <span class="text-slate-400 italic">-</span>
+                        }
+                        else
+                        {
+
+                            @g.Aciklama
+                        }
+                    </td>
+                    <td class="text-sm text-slate-500">
+                        <div>@g.GiderTarihi.ToString("dd.MM.yyyy")</div>
+                        <div class="text-[10px] opacity-70">@g.GiderTarihi.ToString("HH:mm")</div>
+                    </td>
+                    <td>
+                        <div class="flex items-center gap-2">
+                            <div class="avatar placeholder">
+                                <div class="bg-slate-100 text-slate-500 w-6 h-6 rounded-full text-xs">
+                                    <span>@((g.Personel?.AdSoyad ?? "?").Substring(0, 1))</span>
+                                </div>
+                            </div>
+                            <span class="text-xs">@(g.Personel?.AdSoyad ?? "Sistem")</span>
+                        </div>
+                    </td>
+                    <td class="text-right">
+                        <span class="badge bg-slate-800 text-white border-0 badge-sm font-semibold">@g.Tutar.ToString("C2")</span>
+                    </td>
+                    <td class="text-right">
+                        <button class="btn btn-ghost btn-xs text-indigo-600"
+                                onclick="giderDuzenle(this)"
+                                data-id="@g.GiderId"
+                                data-aciklama="@g.Aciklama"
+                                data-tutar="@g.Tutar"
+                                data-kat="@g.GiderKategoriId"
+                                data-tarih="@g.GiderTarihi.ToString("yyyy-MM-ddTHH:mm")">
+                            <i class="fa-solid fa-pen"></i>
+                        </button>
+                        <button class="btn btn-ghost btn-xs text-red-500"
+                                onclick="giderSilModal(@g.GiderId, '@(g.GiderKategori?.KategoriAdi ?? "?")', '@g.Tutar.ToString("C2")')">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            }
+            @if (Model.Count == 0)
+            {
+                <tr><td colspan="6" class="text-center py-8 text-slate-400">Kayıt bulunamadı.</td></tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<dialog id="modal_gider_ekle" class="modal">
+<div class="modal-box bg-white max-w-lg">
+    <form method="dialog">
+        <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button>
+    </form>
+        
+    <h3 class="font-bold text-lg mb-4 flex items-center gap-2">
+        <i class="fa-solid fa-plus-circle text-blue-600"></i>
+        Yeni Gider Ekle
+    </h3>
+        
+    <form action="/Admin/GiderEkle" method="post" class="space-y-3">
+            <div class="form-control">
+                <label class="label pb-1">
+                    <span class="label-text text-sm font-medium">Kategori *</span>
+                </label>
+                <select name="katId" class="select select-bordered w-full bg-slate-50" required>
+                    <option disabled selected value="">Kategori seçiniz...</option>
+                    @if (kategoriler != null)
+                    {
+                        foreach (var k in kategoriler)
+                        {
+                            <option value="@k.GiderKategoriId">@k.KategoriAdi</option>
+                        }
+                    }
+                </select>
+            </div>
+
+            <div class="form-control">
+                <label class="label pb-1">
+                    <span class="label-text text-sm font-medium">Tutar *</span>
+                </label>
+                <input type="number" 
+                       name="tutar" 
+                       step="0.01" 
+                       placeholder="Örn: 1500.00" 
+                       class="input input-bordered w-full bg-slate-50" 
+                       required 
+                       autocomplete="off" />
+            </div>
+
+            <div class="form-control">
+                <label class="label pb-1">
+                    <span class="label-text text-sm font-medium">Açıklama</span>
+                </label>
+                <textarea name="aciklama" 
+                          class="textarea textarea-bordered bg-slate-50" 
+                          placeholder="Gider detayları..." 
+                          rows="3"></textarea>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-full mt-2">
+                <i class="fa-solid fa-check"></i> Kaydet
+            </button>
+        </form>
+    </div>
+    <form method="dialog" class="modal-backdrop">
+        <button>Kapat</button>
+    </form>
+</dialog>
+
+<dialog id="modal_gider_duzenle" class="modal">
+<div class="modal-box bg-white max-w-lg">
+    <form method="dialog">
+        <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button>
+    </form>
+        
+    <h3 class="font-bold text-lg mb-4 flex items-center gap-2">
+        <i class="fa-solid fa-pen text-blue-600"></i>
+        Gider Düzenle
+    </h3>
+        
+    <form action="/Admin/GiderGuncelle" method="post" class="space-y-3">
+            <input type="hidden" name="id" id="edit_id" />
+
+            <div class="grid grid-cols-2 gap-3">
+                <div class="form-control">
+                    <label class="label pb-1">
+                        <span class="label-text text-sm font-medium">Tarih</span>
+                    </label>
+                    <input type="datetime-local" 
+                           name="tarih" 
+                           id="edit_tarih" 
+                           class="input input-bordered w-full bg-slate-50" 
+                           required />
+                </div>
+                <div class="form-control">
+                    <label class="label pb-1">
+                        <span class="label-text text-sm font-medium">Tutar</span>
+                    </label>
+                    <input type="text" 
+                           name="tutar" 
+                           id="edit_tutar" 
+                           class="input input-bordered w-full bg-slate-50" 
+                           required 
+                           autocomplete="off" />
+                </div>
+            </div>
+
+            <div class="form-control">
+                <label class="label pb-1">
+                    <span class="label-text text-sm font-medium">Kategori</span>
+                </label>
+                <select name="katId" id="edit_kat" class="select select-bordered w-full bg-slate-50">
+                    @if (kategoriler != null)
+                    {
+                        foreach (var k in kategoriler)
+                        {
+                            <option value="@k.GiderKategoriId">@k.KategoriAdi</option>
+                        }
+                    }
+                </select>
+            </div>
+
+            <div class="form-control">
+                <label class="label pb-1">
+                    <span class="label-text text-sm font-medium">Açıklama</span>
+                </label>
+                <textarea name="aciklama" 
+                          id="edit_aciklama" 
+                          class="textarea textarea-bordered bg-slate-50" 
+                          rows="3"></textarea>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-full mt-2">
+                <i class="fa-solid fa-save"></i> Güncelle
+            </button>
+        </form>
+    </div>
+    <form method="dialog" class="modal-backdrop">
+        <button>Kapat</button>
+    </form>
+</dialog>
+
+<!-- Gider Sil Onay Modal -->
+<dialog id="modal_gider_sil" class="modal">
+    <div class="modal-box bg-white max-w-md">
+        <h3 class="font-bold text-lg text-slate-800 mb-2">
+            <i class="fa-solid fa-triangle-exclamation text-warning mr-2"></i>
+            Emin misiniz?
+        </h3>
+        <p class="text-slate-600 mb-4">
+            <span id="sil_kategori" class="font-bold text-error"></span> kategorisindeki 
+            <span id="sil_tutar" class="font-bold text-error"></span> tutarlı gider silinecek. Bu işlem geri alınamaz!
+        </p>
+
+        <div class="modal-action">
+            <form action="/Admin/GiderSil" method="post" id="form_gider_sil" class="flex gap-2 w-full">
+                <input type="hidden" name="id" id="sil_gider_id" />
+                <button type="button" class="btn btn-ghost flex-1" onclick="document.getElementById('modal_gider_sil').close()">
+                    <i class="fa-solid fa-xmark mr-1"></i> İptal
+                </button>
+                <button type="submit" class="btn btn-error text-white flex-1">
+                    <i class="fa-solid fa-trash mr-1"></i> Sil
+                </button>
+            </form>
+        </div>
+    </div>
+    <form method="dialog" class="modal-backdrop">
+        <button>Kapat</button>
+    </form>
+</dialog>
+
+<script>
+    // Toast bildirimleri 3 saniye sonra otomatik kapat
+    window.addEventListener('DOMContentLoaded', function() {
+        const successToast = document.getElementById('successToast');
+        const errorToast = document.getElementById('errorToast');
+
+        if (successToast) {
+            setTimeout(() => {
+                successToast.style.opacity = '0';
+                successToast.style.transform = 'translateX(100%)';
+                setTimeout(() => successToast.remove(), 300);
+            }, 3000);
+        }
+
+        if (errorToast) {
+            setTimeout(() => {
+                errorToast.style.opacity = '0';
+                errorToast.style.transform = 'translateX(100%)';
+                setTimeout(() => errorToast.remove(), 300);
+            }, 3000);
+        }
+    });
+
+    function giderDuzenle(btn) {
+        document.getElementById('edit_id').value = btn.getAttribute('data-id');
+
+        // Tutarı formatla (virgül/nokta sorunu için)
+        let tutar = btn.getAttribute('data-tutar').replace('₺', '').trim();
+        document.getElementById('edit_tutar').value = tutar;
+
+        document.getElementById('edit_kat').value = btn.getAttribute('data-kat');
+        document.getElementById('edit_aciklama').value = btn.getAttribute('data-aciklama');
+        document.getElementById('edit_tarih').value = btn.getAttribute('data-tarih');
+
+        document.getElementById('modal_gider_duzenle').showModal();
+    }
+
+    function giderSilModal(id, kategori, tutar) {
+        document.getElementById('sil_gider_id').value = id;
+        document.getElementById('sil_kategori').textContent = kategori;
+        document.getElementById('sil_tutar').textContent = tutar;
+        document.getElementById('modal_gider_sil').showModal();
+    }
+</script>
