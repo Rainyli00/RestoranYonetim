@@ -171,8 +171,6 @@ cd RestoranYonetim
 dotnet run
 ```
 
-Uygulama varsayılan olarak `https://localhost:5001` adresinde çalışacaktır.
-
 ### Varsayılan Giriş Bilgileri
 
 | Rol | Kullanıcı Adı | Şifre |
