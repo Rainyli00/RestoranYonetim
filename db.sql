@@ -205,11 +205,12 @@ GO
 
 -- 19) islem_log
 CREATE TABLE dbo.islem_log (
-    log_id        INT IDENTITY(1,1) PRIMARY KEY,
-    personel_id   INT           NULL,
-    islem_turu_id INT           NULL,
-    ip_adresi     NVARCHAR(45) NULL,
-    zaman         DATETIME      NOT NULL CONSTRAINT DF_islem_log_zaman DEFAULT GETDATE(),
+    log_id          INT IDENTITY(1,1) PRIMARY KEY,
+    personel_id     INT            NULL,
+    islem_turu_id   INT            NULL,
+    ip_adresi       NVARCHAR(45)   NULL,
+    islem_aciklama  NVARCHAR(500)  NULL,
+    zaman           DATETIME       NOT NULL CONSTRAINT DF_islem_log_zaman DEFAULT GETDATE(),
     CONSTRAINT FK_islem_log_personel FOREIGN KEY (personel_id) REFERENCES dbo.personel(personel_id),
     CONSTRAINT FK_islem_log_islem_turu FOREIGN KEY (islem_turu_id) REFERENCES dbo.islem_turu(islem_turu_id)
 );
@@ -279,12 +280,163 @@ GO
 ------------------------------------------------------------
 -- VARSAYILAN VERÝLER (SEED DATA)
 ------------------------------------------------------------
--- Mesai Durumlarý (Burasý önemli, personel ekleyebilmen için dolu olmalý)
+
+-- Roller (1: Garson, 2: Yönetici)
+INSERT INTO dbo.rol (rol_adi) VALUES 
+('Garson'),
+('Yönetici');
+GO
+
+-- Hesap Durumlarý (1: Aktif, 2: Pasif, 3: Askýda, 4: Ýþten Ayrýldý)
+INSERT INTO dbo.hesap_durum (durum_adi) VALUES 
+('Aktif'),
+('Pasif'),
+('Askýda'),
+('Ýþten Ayrýldý');
+GO
+
+-- Masa Durumlarý (1: Boþ, 2: Dolu, 3: Rezerve)
+INSERT INTO dbo.masa_durum (durum_adi) VALUES 
+('Boþ'),
+('Dolu'),
+('Rezerve');
+GO
+
+-- Mesai Durumlarý (1: Mesai Dýþý, 2: Mesaide, 3: Molada)
 INSERT INTO dbo.mesai_durum (durum_adi) VALUES 
 ('Mesai Dýþý'),
 ('Mesaide'),
 ('Molada');
 GO
 
-PRINT 'restoran_db baþarýyla oluþturuldu ve mesai_durum tablosu eklendi.';
+-- Sipariþ Durumlarý (1: Hazýrlanýyor, 2: Servis Edildi, 3: Tamamlandý, 4: Ýptal Edildi)
+INSERT INTO dbo.siparis_durum (durum_adi) VALUES 
+('Hazýrlanýyor'),
+('Servis Edildi'),
+('Tamamlandý'),
+('Ýptal Edildi');
+GO
+
+-- Ödeme Türleri (1: Nakit, 2: Kredi Kartý)
+INSERT INTO dbo.odeme_turu (odeme_turu_adi) VALUES 
+('Nakit'),
+('Kredi Kartý');
+GO
+
+-- Geri Bildirim Türleri (1: Ürün, 2: Genel, 3: Hizmet)
+INSERT INTO dbo.geribildirim_turu (tur_adi) VALUES 
+('Ürün'),
+('Genel'),
+('Hizmet');
+GO
+
+-- Gider Kategorileri (1: Kira, 2: Fatura, 3: Maaþ, 4: Malzeme, 5: Bakým/Onarým, 6: Pazarlama, 7: Vergi, 8: Diðer)
+INSERT INTO dbo.gider_kategori (kategori_adi) VALUES 
+('Kira'),
+('Fatura'),
+('Maaþ'),
+('Malzeme'),
+('Bakým/Onarým'),
+('Pazarlama'),
+('Vergi'),
+('Diðer');
+GO
+
+-- Ýþlem Türleri (Log sistemi için, 1-25 arasý)
+INSERT INTO dbo.islem_turu (tur_adi) VALUES 
+('Giriþ'),               -- 1
+('Çýkýþ'),               -- 2
+('Personel Ekleme'),      -- 3
+('Personel Güncelleme'),  -- 4
+('Personel Silme'),       -- 5
+('Kategori Ekleme'),      -- 6
+('Kategori Güncelleme'),  -- 7
+('Kategori Silme'),       -- 8
+('Ürün Ekleme'),          -- 9
+('Ürün Güncelleme'),      -- 10
+('Ürün Silme'),           -- 11
+('Masa Ekleme'),          -- 12
+('Masa Güncelleme'),      -- 13
+('Masa Silme'),           -- 14
+('Gider Ekleme'),         -- 15
+('Gider Güncelleme'),     -- 16
+('Gider Silme'),          -- 17
+('Geri Bildirim Silme'),  -- 18
+('Sipariþ Oluþturma'),    -- 19
+('Sipariþ Ürün Ekleme'),  -- 20
+('Sipariþ Ürün Çýkarma'), -- 21
+('Sipariþ Durum Güncelleme'), -- 22
+('Sipariþ Ýptal'),        -- 23
+('Ödeme Alma'),           -- 24
+('Masa Rezervasyon');      -- 25
+GO
+
+-- Varsayýlan Personeller (Sisteme ilk giriþ için zorunlu)
+-- Þifre: admin123 ? SHA-256 hash
+-- Þifre: garson123 ? SHA-256 hash
+INSERT INTO dbo.personel (ad_soyad, telefon, email, adres, kullanici_adi, sifre_hash, rol_id, hesap_durum_id, mesai_durum_id) VALUES 
+(N'Admin Kullanýcý', N'0500 000 0001', N'admin@restoran.com', N'Ýstanbul', N'admin', '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9', 2, 1, 1),
+(N'Garson Kullanýcý', N'0500 000 0002', N'garson@restoran.com', N'Ýstanbul', N'garson', '4f13bb357843cbfd05f700f7482db02b1493a9b28378592d94a74dcceb84e4d3', 1, 1, 1);
+GO
+
+-- Varsayýlan Masalar (Garson panelinin çalýþmasý için gerekli, tümü Boþ durumda)
+INSERT INTO dbo.masa (masa_adi, durum_id) VALUES 
+(N'Masa 1', 1),
+(N'Masa 2', 1),
+(N'Masa 3', 1),
+(N'Masa 4', 1),
+(N'Masa 5', 1),
+(N'Masa 6', 1),
+(N'Masa 7', 1),
+(N'Masa 8', 1),
+(N'Masa 9', 1),
+(N'Masa 10', 1);
+GO
+
+-- Varsayýlan Kategoriler (Menü ve "Diðer" kategorisi kod tarafýndan özel kontrol ediliyor)
+INSERT INTO dbo.kategori (kategori_adi, sira_no, resim_url) VALUES 
+(N'Çorbalar', 1, NULL),
+(N'Salatalar', 2, NULL),
+(N'Ana Yemekler', 3, NULL),
+(N'Pideler', 4, NULL),
+(N'Tatlýlar', 5, NULL),
+(N'Ýçecekler', 6, NULL),
+(N'Diðer', 9999, NULL);
+GO
+
+-- Varsayýlan Ürünler (Her kategoriden örnek ürünler, menünün boþ olmamasý için)
+INSERT INTO dbo.urun (kategori_id, urun_adi, fiyat, stok, aktif_mi, resim_url) VALUES 
+-- Çorbalar (kategori_id: 1)
+(1, N'Mercimek Çorbasý', 45.00, 50, 1, NULL),
+(1, N'Ezogelin Çorbasý', 45.00, 50, 1, NULL),
+(1, N'Domates Çorbasý', 40.00, 50, 1, NULL),
+-- Salatalar (kategori_id: 2)
+(2, N'Çoban Salata', 55.00, 40, 1, NULL),
+(2, N'Mevsim Salata', 50.00, 40, 1, NULL),
+(2, N'Sezar Salata', 75.00, 30, 1, NULL),
+-- Ana Yemekler (kategori_id: 3)
+(3, N'Izgara Köfte', 150.00, 30, 1, NULL),
+(3, N'Tavuk Þiþ', 140.00, 30, 1, NULL),
+(3, N'Adana Kebap', 180.00, 25, 1, NULL),
+(3, N'Kuzu Pirzola', 250.00, 20, 1, NULL),
+-- Pideler (kategori_id: 4)
+(4, N'Kaþarlý Pide', 120.00, 30, 1, NULL),
+(4, N'Kýymalý Pide', 130.00, 30, 1, NULL),
+(4, N'Karýþýk Pide', 140.00, 25, 1, NULL),
+-- Tatlýlar (kategori_id: 5)
+(5, N'Künefe', 110.00, 25, 1, NULL),
+(5, N'Sütlaç', 65.00, 30, 1, NULL),
+(5, N'Baklava', 90.00, 30, 1, NULL),
+-- Ýçecekler (kategori_id: 6)
+(6, N'Çay', 15.00, 100, 1, NULL),
+(6, N'Türk Kahvesi', 40.00, 80, 1, NULL),
+(6, N'Ayran', 25.00, 60, 1, NULL),
+(6, N'Kola', 35.00, 50, 1, NULL),
+(6, N'Su', 10.00, 100, 1, NULL);
+GO
+
+PRINT 'restoran_db baþarýyla oluþturuldu ve tüm seed veriler eklendi.';
+PRINT 'Varsayýlan Giriþ Bilgileri:';
+PRINT '  Yönetici ? Kullanýcý: admin / Þifre: admin123';
+PRINT '  Garson   ? Kullanýcý: garson / Þifre: garson123';
 GO
