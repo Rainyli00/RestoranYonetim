@@ -141,7 +141,7 @@ Proje **20 tablo** içermektedir:
 **1. Projeyi klonlayın:**
 
 ```bash
-git clone https://github.com/KULLANICI_ADINIZ/RestoranYonetim.git
+git clone https://github.com/Rainyli00/RestoranYonetim.git
 cd RestoranYonetim
 ```
 
